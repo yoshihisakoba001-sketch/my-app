@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RunPlan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: #05050A;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px 16px 40px;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: background 0.35s ease;
+    }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pop {
+      0%   { transform: scale(0); opacity: 0; }
+      70%  { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes crownBounce {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-4px); }
+    }
+    @keyframes podiumGlow {
+      0%, 100% { box-shadow: 0 0 8px rgba(255,215,0,0.4); }
+      50%       { box-shadow: 0 0 20px rgba(255,215,0,0.8); }
+    }
+    @keyframes flamePulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.15); }
+    }
+    @keyframes lvBounce {
+      0%   { transform: scale(0.6); opacity: 0; }
+      70%  { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes xpFill {
+      0%   { width: 0%; }
+      100% { width: 75%; }
+    }
+    @keyframes shineSweep {
+      0%   { left: -50%; }
+      60%  { left: 120%; }
+      100% { left: 120%; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+
+  <script type="text/babel">
+
+// ─── Themes ──────────────────────────────────────────────────────────
+const { useState, useEffect, useRef, createContext, useContext } = React;
+
+const DARK = {
+  isDark: true,
+  bg: '#08080F',
+  cardBg: 'rgba(26,26,40,0.85)',
+  inputBg: 'rgba(26,26,40,0.9)',
+  navBg: 'rgba(10,10,18,0.96)',
+  heroBg: 'rgba(197,255,71,0.055)',
+  text: '#EEEEF8',
+  text2: '#7777A0',
+  text3: '#44445A',
+  accent: '#C5FF47',
+  accentText: '#08080F',
+  accent2: '#47B8FF',
+  accent3: '#FF8547',
+  danger: '#FF4D6A',
+  success: '#47FFB3',
+  border: 'rgba(255,255,255,0.07)',
+  border2: 'rgba(255,255,255,0.13)',
+  borderAccent: 'rgba(197,255,71,0.22)',
+  progressBg: 'rgba(255,255,255,0.08)',
+  accentPillBg: 'rgba(197,255,71,0.12)',
+  qrBg: 'rgba(26,26,40,0.9)',
+  qrBorder: 'rgba(255,255,255,0.1)',
+  pillColor: '#C5FF47',
+  pillBg: 'rgba(197,255,71,0.12)',
+  statsBg: 'rgba(255,255,255,0.04)',
+  missedColor: '#FF4D6A',
+  todayColor: '#47B8FF',
+  doneColor: '#C5FF47',
+  planColor: 'rgba(255,255,255,0.22)',
+  separatorColor: 'rgba(255,255,255,0.05)',
+  fabGradient: 'linear-gradient(135deg, #C5FF47, #A0E030)',
+  buttonGradient: 'linear-gradient(135deg, #C5FF47, #A0E030)',
+};
+
+const LIGHT = {
+  isDark: false,
+  bg: '#ECEEF4',
+  cardBg: 'rgba(255,255,255,0.95)',
+  inputBg: 'rgba(255,255,255,0.98)',
+  navBg: 'rgba(236,238,244,0.97)',
+  heroBg: 'rgba(241,43,126,0.06)',
+  text: '#1A1A2A',
+  text2: '#585878',
+  text3: '#9090A8',
+  accent: '#F12B7E',
+  accentText: '#FFFFFF',
+  accent2: '#28D6C0',
+  accent3: '#F89221',
+  danger: '#F12B7E',
+  success: '#28D6C0',
+  border: 'rgba(0,0,0,0.08)',
+  border2: 'rgba(0,0,0,0.14)',
+  borderAccent: 'rgba(241,43,126,0.28)',
+  progressBg: 'rgba(0,0,0,0.08)',
+  accentPillBg: 'rgba(241,43,126,0.1)',
+  qrBg: 'rgba(255,255,255,0.9)',
+  qrBorder: 'rgba(0,0,0,0.1)',
+  pillColor: '#F12B7E',
+  pillBg: 'rgba(241,43,126,0.1)',
+  statsBg: 'rgba(0,0,0,0.04)',
+  missedColor: '#F12B7E',
+  todayColor: '#28D6C0',
+  doneColor: '#28D6C0',
+  planColor: 'rgba(0,0,0,0.16)',
+  separatorColor: 'rgba(0,0,0,0.06)',
+  fabGradient: 'linear-gradient(135deg, #F12B7E, #F633A2)',
+  buttonGradient: 'linear-gradient(135deg, #F12B7E, #F633A2)',
+};
+
+const ThemeContext = createContext(DARK);
+const useTheme = () => useContext(ThemeContext);
+
+// ── Icons ─────────────────────────────────────────────────────────────
+const Icon = ({ name, size = 22, color = 'currentColor', strokeWidth = 1.8 }) => {
+  const paths = {
+    home:     <><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H14v-5h-4v5H4a1 1 0 01-1-1V9.5z"/></>,
+    calendar: <><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></>,
+    plus:     <><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></>,
+    map:      <><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></>,
+    users:    <><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></>,
+    flame:    <><path d="M12 2c0 6-6 8-6 14a6 6 0 0012 0c0-6-6-8-6-14z"/></>,
+    heart:    <><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></>,
+    message:  <><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></>,
+    zap:      <><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></>,
+    check:    <><polyline points="20 6 9 17 4 12"/></>,
+    camera:   <><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></>,
+    upload:   <><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></>,
+    send:     <><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></>,
+    chevronRight: <><polyline points="9 18 15 12 9 6"/></>,
+    arrowLeft: <><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></>,
+    lock:     <><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></>,
+    star:     <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></>,
+    trophy:   <><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 22V18"/><path d="M14 22V18"/><path d="M8 18h8"/><path d="M12 15c-3.314 0-6-4.686-6-7V4h12v4c0 2.314-2.686 7-6 7z"/></>,
+    sun:      <><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></>,
+    moon:     <><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      {paths[name]}
+    </svg>
+  );
+};
+
+// ── Status Bar ────────────────────────────────────────────────────────
+const StatusBar = () => {
+  const t = useTheme();
+  return (
+    <div style={{
+      height: 50, display: 'flex', alignItems: 'flex-end',
+      justifyContent: 'space-between', padding: '0 26px 10px',
+      color: t.text, fontSize: 13, fontWeight: 600, flexShrink: 0, letterSpacing: '-0.01em'
+    }}>
+      <span>9:41</span>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill={t.text}>
+          <rect x="0" y="4" width="3" height="8" rx="0.5"/>
+          <rect x="4.5" y="2.5" width="3" height="9.5" rx="0.5"/>
+          <rect x="9" y="0.5" width="3" height="11.5" rx="0.5"/>
+          <rect x="13.5" y="0" width="2.5" height="12" rx="0.5" opacity="0.3"/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill={t.text}>
+          <path d="M8 2.4C10.7 2.4 13.1 3.5 14.8 5.3L16 4C14 1.8 11.1 0.5 8 0.5C4.9 0.5 2 1.8 0 4L1.2 5.3C2.9 3.5 5.3 2.4 8 2.4Z" opacity="0.35"/>
+          <path d="M8 5.2C9.8 5.2 11.4 5.9 12.6 7.1L13.8 5.8C12.3 4.3 10.3 3.3 8 3.3C5.7 3.3 3.7 4.3 2.2 5.8L3.4 7.1C4.6 5.9 6.2 5.2 8 5.2Z" opacity="0.65"/>
+          <circle cx="8" cy="10" r="1.5"/>
+        </svg>
+        <span style={{ fontSize: 13, fontWeight: 700 }}>100%</span>
+      </div>
+    </div>
+  );
+};
+
+// ── Bottom Nav ────────────────────────────────────────────────────────
+const BottomNav = ({ active, onNavigate }) => {
+  const t = useTheme();
+  const tabs = [
+    { id: 'home',     icon: 'home',     label: 'ホーム' },
+    { id: 'calendar', icon: 'calendar', label: 'カレンダー' },
+    { id: 'record',   icon: 'plus',     label: '記録', fab: true },
+    { id: 'town',     icon: 'map',      label: 'マイタウン' },
+    { id: 'social',   icon: 'users',    label: 'ソーシャル' },
+  ];
+  return (
+    <div style={{
+      height: 78, background: t.navBg,
+      backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+      borderTop: `1px solid ${t.border}`,
+      display: 'flex', alignItems: 'center',
+      padding: '0 8px', flexShrink: 0, position: 'relative', zIndex: 100,
+    }}>
+      {tabs.map(tab => (
+        <button key={tab.id} onClick={() => onNavigate(tab.id)}
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: tab.fab ? 0 : 4,
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          {tab.fab ? (
+            <div style={{
+              width: 52, height: 52, borderRadius: '50%', background: t.fabGradient,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: `0 4px 20px ${t.accent}55`, marginTop: -20,
+            }}>
+              <Icon name="plus" size={24} color={t.accentText} strokeWidth={2.5}/>
+            </div>
+          ) : (
+            <>
+              <Icon name={tab.icon} size={22}
+                color={active === tab.id ? t.accent : t.text3}
+                strokeWidth={active === tab.id ? 2 : 1.8}/>
+              <span style={{ fontSize: 10, fontWeight: active === tab.id ? 600 : 400,
+                color: active === tab.id ? t.accent : t.text3, letterSpacing: '-0.01em' }}>
+                {tab.label}
+              </span>
+            </>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+// ── Card ──────────────────────────────────────────────────────────────
+const Card = ({ children, style = {}, onClick }) => {
+  const t = useTheme();
+  return (
+    <div onClick={onClick} style={{
+      background: t.cardBg,
+      border: `1px solid ${t.border}`,
+      borderRadius: 16, padding: '16px',
+      backdropFilter: 'blur(10px)',
+      cursor: onClick ? 'pointer' : 'default',
+      boxShadow: t.isDark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)',
+      ...style,
+    }}>{children}</div>
+  );
+};
+
+// ── Pill ──────────────────────────────────────────────────────────────
+const Pill = ({ children, color, bg }) => {
+  const t = useTheme();
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      padding: '3px 10px', borderRadius: 99,
+      background: bg || t.accentPillBg,
+      color: color || t.accent,
+      fontSize: 11, fontWeight: 600, letterSpacing: '0.02em',
+    }}>{children}</span>
+  );
+};
+
+// ── ProgressBar ───────────────────────────────────────────────────────
+const ProgressBar = ({ value, max, color, height = 4, style = {} }) => {
+  const t = useTheme();
+  const c = color || t.accent;
+  const pct = Math.min(100, (value / max) * 100);
+  return (
+    <div style={{ background: t.progressBg, borderRadius: 99, height, overflow: 'hidden', ...style }}>
+      <div style={{ width: `${pct}%`, height: '100%', borderRadius: 99, background: c,
+        transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
+        boxShadow: `0 0 8px ${c}60` }}/>
+    </div>
+  );
+};
+
+// ── Avatar ────────────────────────────────────────────────────────────
+const Avatar = ({ name, size = 36 }) => {
+  const t = useTheme();
+  const palettes = t.isDark
+    ? ['#C5FF47','#47B8FF','#FF7847','#B847FF','#47FFB8']
+    : ['#E8570A','#0080E0','#1FAF52','#9B3DD9','#E0A800'];
+  const color = palettes[name.charCodeAt(0) % palettes.length];
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      background: `${color}20`, border: `1.5px solid ${color}55`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: size * 0.38, fontWeight: 700, color, flexShrink: 0,
+    }}>{name[0]}</div>
+  );
+};
+
+// Section label
+const SectionLabel = ({ children }) => {
+  const t = useTheme();
+  return (
+    <div style={{ fontSize: 11, color: t.text3, fontWeight: 600,
+      letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+      {children}
+    </div>
+  );
+};
+
+Object.assign(window, {
+  DARK, LIGHT, ThemeContext, useTheme,
+  Icon, StatusBar, BottomNav, Card, Pill, ProgressBar, Avatar, SectionLabel,
+  useState, useEffect, useRef, createContext, useContext,
+});
+
+// ─── Home Screen ─────────────────────────────────────────────────────
+
+const HomeScreen = ({ onNavigate }) => {
+  const t = useTheme();
+
+  const feedItems = [
+    { user: '田中', action: '18kmのLSDランを完走！', time: '2時間前', emoji: '🔥' },
+    { user: '鈴木', action: 'マイタウンでスタジアムをアンロック！', time: '5時間前', emoji: '🏟️' },
+    { user: '山本', action: '朝ラン 5km テンポ走', time: '昨日', emoji: '⚡' },
+  ];
+
+  const DarkTown = () => (
+    <svg viewBox="0 0 340 90" style={{ width: '100%', height: 90 }}>
+      <defs>
+        <linearGradient id="msky_d" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#08081A"/><stop offset="100%" stopColor="#12122A"/>
+        </linearGradient>
+      </defs>
+      <rect width="340" height="90" fill="url(#msky_d)"/>
+      <rect x="0" y="68" width="340" height="22" fill="#0D1A0D"/>
+      <rect x="0" y="70" width="340" height="10" fill="#181828"/>
+      {[0,30,60,90,120,160,200,240,290].map(x => <rect key={x} x={x} y={74} width={20} height={2} fill="#2A2A48"/>)}
+      <rect x="8" y="42" width="22" height="30" fill="#141428" rx="1"/>
+      <rect x="14" y="47" width="4" height="4" fill="#C5FF47" opacity="0.5"/>
+      <rect x="20" y="47" width="4" height="4" fill="#C5FF47" opacity="0.3"/>
+      <rect x="36" y="30" width="28" height="42" fill="#1C1C35" rx="1"/>
+      <rect x="40" y="35" width="5" height="5" fill="#C5FF47" opacity="0.7"/>
+      <rect x="48" y="35" width="5" height="5" fill="#C5FF47" opacity="0.4"/>
+      <rect x="56" y="35" width="5" height="5" fill="#47B8FF" opacity="0.3"/>
+      <rect x="40" y="44" width="5" height="5" fill="#47B8FF" opacity="0.5"/>
+      <rect x="48" y="44" width="5" height="5" fill="#C5FF47" opacity="0.6"/>
+      <rect x="72" y="55" width="38" height="17" fill="#0F2010"/>
+      <circle cx="83" cy="55" r="6" fill="#1A4020"/>
+      <circle cx="97" cy="56" r="5" fill="#183818"/>
+      <circle cx="107" cy="55" r="5" fill="#1E4828"/>
+      <rect x="118" y="38" width="24" height="34" fill="#1A1A32" rx="1"/>
+      <rect x="122" y="43" width="5" height="5" fill="#C5FF47" opacity="0.8"/>
+      <rect x="130" y="43" width="5" height="5" fill="#C5FF47" opacity="0.5"/>
+      <rect x="148" y="24" width="32" height="48" fill="#20203C" rx="1"/>
+      <rect x="153" y="29" width="6" height="6" fill="#C5FF47" opacity="0.9"/>
+      <rect x="163" y="29" width="6" height="6" fill="#47B8FF" opacity="0.7"/>
+      <rect x="153" y="39" width="6" height="6" fill="#C5FF47" opacity="0.5"/>
+      <rect x="163" y="39" width="6" height="6" fill="#C5FF47" opacity="0.8"/>
+      <rect x="153" y="49" width="6" height="6" fill="#47B8FF" opacity="0.4"/>
+      <rect x="163" y="49" width="6" height="6" fill="#C5FF47" opacity="0.6"/>
+      <rect x="190" y="60" width="60" height="12" fill="#0A1A2A" rx="2"/>
+      <path d="M190 63 Q210 60 230 63 Q250 66 270 63" stroke="#1A3A5A" strokeWidth="1.5" fill="none"/>
+      <rect x="200" y="42" width="20" height="30" fill="#181830" rx="1"/>
+      <rect x="228" y="35" width="26" height="37" fill="#1C1C38" rx="1"/>
+      <rect x="232" y="40" width="5" height="5" fill="#C5FF47" opacity="0.7"/>
+      <rect x="241" y="40" width="5" height="5" fill="#C5FF47" opacity="0.4"/>
+      <ellipse cx="295" cy="52" rx="28" ry="16" fill="none" stroke="#C5FF47" strokeWidth="1" opacity="0.3" strokeDasharray="3 2"/>
+      <text x="295" y="56" textAnchor="middle" fontSize="7" fill="#C5FF47" opacity="0.4" fontFamily="Space Grotesk">STADIUM</text>
+      {[[180,12],[45,8],[130,6],[320,10],[260,5]].map(([x,y],i) => <circle key={i} cx={x} cy={y} r={0.8} fill="#EEEEF8" opacity="0.5"/>)}
+    </svg>
+  );
+
+  // Mini Minecraft day town
+  const LightTown = () => (
+    <svg viewBox="0 0 340 90" style={{ width: '100%', height: 90 }}>
+      {/* Sky */}
+      <rect width="340" height="90" fill="#7EC4E8"/>
+      {/* Sun */}
+      <rect x="296" y="6" width="18" height="18" fill="#FFE040"/>
+      <rect x="299" y="9" width="12" height="12" fill="#FFD000"/>
+      {/* Clouds */}
+      <rect x="18" y="8"  width="40" height="8" fill="#F8F8F8"/>
+      <rect x="14" y="12" width="48" height="6" fill="#F8F8F8"/>
+      <rect x="160" y="6"  width="44" height="7" fill="#EFEFEF"/>
+      <rect x="156" y="11" width="52" height="6" fill="#EFEFEF"/>
+      {/* Grass */}
+      <rect x="0" y="68" width="340" height="8" fill="#5AA82A"/>
+      {[0,16,32,48,64,80,96,112,128,160,192,224,256,288,320].map(x => (
+        <rect key={x} x={x} y={68} width={6} height={4} fill="#4A9020" opacity="0.5"/>
+      ))}
+      {/* Dirt + road */}
+      <rect x="0" y="76" width="340" height="14" fill="#8B6432"/>
+      <rect x="0" y="76" width="340" height="9"  fill="#8A8A98"/>
+      {[4,32,60,88,116,144,172,200,228,256,284,312].map(x => (
+        <rect key={x} x={x} y={79} width={16} height={3} fill="#AAAACC" opacity="0.6"/>
+      ))}
+      {/* Park */}
+      <rect x="2" y="62" width="44" height="8" fill="#38900C"/>
+      {/* Tree 1 (mini pixel) */}
+      <rect x="5"  y="56" width="4" height="8" fill="#6A4018"/>
+      <rect x="1"  y="50" width="12" height="8" fill="#2A5E10"/>
+      <rect x="3"  y="44" width="8"  height="7" fill="#387818"/>
+      {/* Tree 2 */}
+      <rect x="28" y="57" width="4" height="7" fill="#6A4018"/>
+      <rect x="24" y="51" width="12" height="7" fill="#2A5E10"/>
+      <rect x="26" y="46" width="8"  height="6" fill="#387818"/>
+      {/* Stone tower */}
+      <rect x="52" y="22" width="36" height="48" fill="#6E6E7A"/>
+      {[0,8,16,24,32,40].map(i => <rect key={i} x={52} y={22+i} width={36} height={1} fill="#505060" opacity="0.5"/>)}
+      {[52,64,76].map(x => <rect key={x} x={x} y={14} width={8} height={10} fill="#6E6E7A"/>)}
+      <rect x="52" y="22" width="36" height="2" fill="#505060"/>
+      {[0,1,2].map(col => [0,1,2].map(row => (
+        <rect key={`t${col}-${row}`} x={57+col*10} y={26+row*13} width={7} height={9}
+          fill={col===1&&row===1?'#FFD060':'#90B8D8'} opacity="0.8"/>
+      )))}
+      {/* Brick building */}
+      <rect x="94" y="34" width="28" height="36" fill="#B85040"/>
+      {[0,8,16,24,32].map(i => <rect key={i} x={94} y={34+i} width={28} height={1} fill="#983830" opacity="0.5"/>)}
+      {[0,1].map(col => [0,1].map(row => (
+        <rect key={`b${col}-${row}`} x={99+col*12} y={40+row*13} width={8} height={8} fill="#D4C870" opacity="0.75"/>
+      )))}
+      {/* Glass tower */}
+      <rect x="128" y="16" width="28" height="54" fill="#6898C8"/>
+      {[0,8,16,24,32,40,48].map(i => <rect key={i} x={128} y={16+i} width={28} height={1} fill="#5080B0" opacity="0.4"/>)}
+      {[0,1].map(col => [0,1,2,3].map(row => (
+        <rect key={`g${col}-${row}`} x={133+col*11} y={22+row*12} width={8} height={8} fill="#A8D0F0" opacity="0.65"/>
+      )))}
+      <rect x="126" y="12" width="32" height="5" fill="#5080B0"/>
+      {/* River */}
+      <rect x="162" y="60" width="52" height="10" fill="#4A8CD4"/>
+      {[162,178,194,208].map(x => <rect key={x} x={x} y={60} width={12} height={10} fill="#5898DC" opacity="0.5"/>)}
+      {/* Bridge */}
+      <rect x="176" y="56" width="24" height="6" fill="#888898"/>
+      {/* Small houses */}
+      <rect x="222" y="52" width="20" height="18" fill="#BC9448"/>
+      <rect x="222" y="44" width="20" height="10" fill="#8A2020"/>
+      <rect x="226" y="56" width="6"  height="6"  fill="#90C4E0" opacity="0.7"/>
+      <rect x="248" y="54" width="18" height="16" fill="#A88040"/>
+      <rect x="248" y="46" width="18" height="10" fill="#203878"/>
+      <rect x="252" y="58" width="6"  height="6"  fill="#90C4E0" opacity="0.7"/>
+      {/* Stadium locked */}
+      <rect x="276" y="50" width="32" height="3"  fill="#906030" opacity="0.4"/>
+      <rect x="276" y="67" width="32" height="3"  fill="#906030" opacity="0.4"/>
+      <rect x="276" y="50" width="3"  height="20" fill="#906030" opacity="0.4"/>
+      <rect x="305" y="50" width="3"  height="20" fill="#906030" opacity="0.4"/>
+      <text x="292" y="63" textAnchor="middle" fontSize="6" fill="#906030" opacity="0.6"
+        fontFamily="Space Grotesk" fontWeight="700">🔒 STADIUM</text>
+    </svg>
+  );
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto', overflowX: 'hidden' }} className="hide-scroll">
+      {/* Hero */}
+      <div style={{ padding: '12px 20px 20px',
+        background: `linear-gradient(180deg, ${t.heroBg} 0%, transparent 100%)`,
+        borderBottom: `1px solid ${t.border}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <Pill>🏆 東京マラソン 2027</Pill>
+          <span style={{ fontSize: 11, color: t.text3 }}>フルマラソン</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 72, fontWeight: 700, color: t.accent, lineHeight: 1, letterSpacing: '-0.04em' }}>243</span>
+          <span style={{ fontSize: 20, color: t.text2, fontWeight: 500 }}>日</span>
+        </div>
+        <div style={{ fontSize: 13, color: t.text2 }}>2027年3月1日（日） · 東京都庁前スタート</div>
+      </div>
+
+      {/* Next training */}
+      <div style={{ padding: '16px 20px 0' }}>
+        <SectionLabel>今日のトレーニング</SectionLabel>
+        <Card style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12,
+            background: `${t.accent}18`, border: `1px solid ${t.accent}33`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name="zap" size={22} color={t.accent}/>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: 15, color: t.text, marginBottom: 3 }}>LSD — 18 km</div>
+            <div style={{ fontSize: 12, color: t.text2 }}>ゆっくりペース 6:30/km · 約1時間57分</div>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontSize: 22 }}>☁️</div>
+            <div style={{ fontSize: 11, color: t.text2 }}>14°C</div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Weekly progress */}
+      <div style={{ padding: '16px 20px 0' }}>
+        <SectionLabel>今週の進捗</SectionLabel>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div>
+              <span style={{ fontSize: 28, fontWeight: 700, color: t.text, letterSpacing: '-0.03em' }}>28</span>
+              <span style={{ fontSize: 13, color: t.text2, marginLeft: 3 }}>/ 42 km</span>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ fontSize: 22, fontWeight: 700, color: t.accent }}>67%</span>
+              <div style={{ fontSize: 11, color: t.text2 }}>達成率</div>
+            </div>
+          </div>
+          <ProgressBar value={28} max={42} height={6}/>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
+            {['月','火','水','木','金','土','日'].map((d, i) => {
+              const states = ['done','done','done','today','plan','rest','plan'];
+              const colors = {
+                done: t.accent, today: t.accent2,
+                plan: t.isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
+                rest: t.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+              };
+              return (
+                <div key={d} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 26, height: 26, borderRadius: 8, background: colors[states[i]],
+                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {states[i] === 'done' && <Icon name="check" size={14} color={t.accentText} strokeWidth={3}/>}
+                    {states[i] === 'today' && <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.accentText }}/>}
+                  </div>
+                  <span style={{ fontSize: 10, color: i === 3 ? t.accent2 : t.text3 }}>{d}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
+
+      {/* Mini town */}
+      <div style={{ padding: '16px 20px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <SectionLabel>マイタウン</SectionLabel>
+          <button onClick={() => onNavigate('town')} style={{ background: 'none', border: 'none',
+            color: t.accent, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 3 }}>
+            全景を見る <Icon name="chevronRight" size={12} color={t.accent}/>
+          </button>
+        </div>
+        <Card style={{ padding: '10px 10px 6px', overflow: 'hidden' }}>
+          {t.isDark ? <DarkTown/> : <LightTown/>}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, padding: '4px 4px 0' }}>
+            <div style={{ fontSize: 12, color: t.text2 }}>
+              累計 <span style={{ color: t.accent, fontWeight: 600 }}>284 km</span>
+            </div>
+            <Pill color={t.accent3} bg={`${t.accent3}18`}>🏟️ スタジアムまで 16km</Pill>
+          </div>
+        </Card>
+      </div>
+
+      {/* Feed */}
+      <div style={{ padding: '16px 20px 0' }}>
+        <SectionLabel>グループの活動</SectionLabel>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {feedItems.map((item, i) => (
+            <Card key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+              <Avatar name={item.user} size={36}/>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
+                  <span style={{ color: t.accent }}>{item.user}</span>
+                  <span style={{ color: t.text }}> さん</span>
+                </div>
+                <div style={{ fontSize: 12, color: t.text2 }}>{item.action}</div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontSize: 18 }}>{item.emoji}</div>
+                <div style={{ fontSize: 10, color: t.text3 }}>{item.time}</div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+      <div style={{ height: 20 }}/>
+    </div>
+  );
+};
+
+Object.assign(window, { HomeScreen });
+
+// ─── AI Plan Screen ──────────────────────────────────────────────────
+
+const PlanScreen = () => {
+  const t = useTheme();
+  const [input, setInput] = useState('');
+
+  const planData = [
+    { month: '5月', phase: 'ベース構築', weekly: '35km', longRun: '16km' },
+    { month: '6月', phase: 'ベース構築', weekly: '42km', longRun: '20km' },
+    { month: '7月', phase: '有酸素強化', weekly: '48km', longRun: '22km' },
+    { month: '8月', phase: '有酸素強化', weekly: '50km', longRun: '24km' },
+    { month: '9月', phase: 'スピード強化', weekly: '52km', longRun: '26km' },
+    { month: '10月', phase: 'スピード強化', weekly: '55km', longRun: '28km' },
+    { month: '11月', phase: 'ピーク', weekly: '58km', longRun: '30km' },
+    { month: '12月', phase: 'ピーク', weekly: '55km', longRun: '32km' },
+    { month: '1月', phase: '最終仕上げ', weekly: '48km', longRun: '30km' },
+    { month: '2月', phase: 'テーパリング', weekly: '35km', longRun: '21km' },
+    { month: '3月', phase: 'レース', weekly: '20km', longRun: '—' },
+  ];
+
+  const messages = [
+    { role: 'ai', text: 'こんにちは！RunPlan AIコーチです 🏃\nまず目標レースを教えてください。' },
+    { role: 'user', text: '2027年3月の東京マラソンを完走したいです！' },
+    { role: 'ai', text: '素晴らしい目標ですね！東京マラソンは世界6大メジャーのひとつ。\n現在の月間走行距離はどのくらいですか？' },
+    { role: 'user', text: '月100kmくらいです。週3〜4日走ってます。' },
+    { role: 'ai', text: null, isPlan: true },
+    { role: 'user', text: 'もう少しゆるめにしてほしいです。8月が夏で大変そうで…' },
+    { role: 'ai', text: '了解です！夏場（7〜8月）の負荷を下げて、涼しくなる9月から段階的に上げる形に調整しました。無理せず継続できるペースが一番大切ですよ 👍', isAdjust: true },
+  ];
+
+  const PlanCard = () => (
+    <div style={{
+      background: t.isDark ? 'rgba(197,255,71,0.05)' : 'rgba(232,87,10,0.04)',
+      border: `1px solid ${t.borderAccent}`,
+      borderRadius: 14, padding: '14px', marginTop: 2,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <Icon name="zap" size={16} color={t.accent}/>
+        <span style={{ fontSize: 13, fontWeight: 700, color: t.accent }}>東京マラソン2027 トレーニングプラン</span>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+        <thead>
+          <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+            {['月', 'フェーズ', '週間', 'ロング'].map(h => (
+              <th key={h} style={{ padding: '4px 6px', color: t.text3, fontWeight: 600, textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {planData.map((row, i) => (
+            <tr key={i} style={{ borderBottom: `1px solid ${t.separatorColor}` }}>
+              <td style={{ padding: '5px 6px', fontWeight: 600, color: t.text, whiteSpace: 'nowrap' }}>{row.month}</td>
+              <td style={{ padding: '5px 6px', color: t.text2, fontSize: 10, whiteSpace: 'nowrap' }}>{row.phase}</td>
+              <td style={{ padding: '5px 6px', color: t.accent2, fontWeight: 600, whiteSpace: 'nowrap' }}>{row.weekly}</td>
+              <td style={{ padding: '5px 6px', color: t.accent, fontWeight: 600, whiteSpace: 'nowrap' }}>{row.longRun}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button style={{
+        width: '100%', marginTop: 12, padding: '10px',
+        background: t.buttonGradient, border: 'none', borderRadius: 10,
+        fontSize: 13, fontWeight: 700, color: t.accentText, cursor: 'pointer',
+      }}>このプランでカレンダーに保存 →</button>
+    </div>
+  );
+
+  const aiBubbleBg = t.isDark ? 'rgba(26,26,40,0.9)' : 'rgba(255,255,255,0.9)';
+  const userBubbleBg = t.isDark ? 'rgba(197,255,71,0.13)' : 'rgba(232,87,10,0.1)';
+  const userBubbleBorder = t.isDark ? 'rgba(197,255,71,0.25)' : 'rgba(232,87,10,0.22)';
+
+  const quickReplies = ['もっとゆるめに', '週2日に減らして', 'このまま確定'];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '14px 20px 12px', borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: t.text }}>AI プランナー</div>
+        <div style={{ fontSize: 12, color: t.text2, marginTop: 2 }}>目標から逆算した計画を自動生成</div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }} className="hide-scroll">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {messages.map((msg, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column',
+              alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+              {msg.role === 'ai' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%',
+                    background: t.isDark
+                      ? 'linear-gradient(135deg, #C5FF47, #47B8FF)'
+                      : 'linear-gradient(135deg, #E8570A, #0080E0)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name="zap" size={12} color="#FFF" strokeWidth={2.5}/>
+                  </div>
+                  <span style={{ fontSize: 11, color: t.text2, fontWeight: 600 }}>RunPlan AI</span>
+                </div>
+              )}
+              {msg.isPlan ? (
+                <div style={{ maxWidth: '90%' }}><PlanCard/></div>
+              ) : (
+                <div style={{
+                  maxWidth: '80%', padding: '10px 14px',
+                  borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                  background: msg.role === 'user' ? userBubbleBg : aiBubbleBg,
+                  border: `1px solid ${msg.role === 'user' ? userBubbleBorder : t.border}`,
+                  boxShadow: t.isDark ? 'none' : '0 1px 6px rgba(0,0,0,0.07)',
+                  fontSize: 13, lineHeight: 1.6, color: t.text, whiteSpace: 'pre-wrap',
+                }}>
+                  {msg.text}
+                  {msg.isAdjust && (
+                    <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <Pill color={t.accent}>7月 42km→36km</Pill>
+                      <Pill color={t.accent2} bg={`${t.accent2}18`}>8月 48km→40km</Pill>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{ height: 8 }}/>
+      </div>
+
+      <div style={{ padding: '8px 12px 4px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }} className="hide-scroll">
+          {quickReplies.map(r => (
+            <button key={r} style={{
+              whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: 99,
+              background: t.qrBg, border: `1px solid ${t.qrBorder}`,
+              color: t.text2, fontSize: 12, cursor: 'pointer', flexShrink: 0,
+              boxShadow: t.isDark ? 'none' : '0 1px 4px rgba(0,0,0,0.06)',
+            }}>{r}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: '8px 12px 12px', flexShrink: 0, borderTop: `1px solid ${t.border}` }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input value={input} onChange={e => setInput(e.target.value)}
+            placeholder="メッセージを送る…"
+            style={{ flex: 1, padding: '11px 14px', borderRadius: 24,
+              background: t.inputBg, border: `1px solid ${t.border}`,
+              color: t.text, fontSize: 14, outline: 'none',
+              fontFamily: 'Space Grotesk, sans-serif',
+              boxShadow: t.isDark ? 'none' : '0 1px 4px rgba(0,0,0,0.06)',
+            }}/>
+          <button style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+            background: t.buttonGradient, border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: `0 3px 12px ${t.accent}44` }}>
+            <Icon name="send" size={18} color={t.accentText} strokeWidth={2}/>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+Object.assign(window, { PlanScreen });
+
+// ─── Calendar Screen ─────────────────────────────────────────────────
+
+const CalendarScreen = () => {
+  const t = useTheme();
+  const [view, setView] = useState('month');
+  const [selectedDay, setSelectedDay] = useState(27);
+
+  const weekDays = ['日','月','火','水','木','金','土'];
+  const firstDay = 3;
+  const daysInMonth = 30;
+  const today = 27;
+
+  const trainingData = {
+    2:  { type: 'done',   label: 'ジョグ', km: 8,  detail: 'イージーラン' },
+    4:  { type: 'done',   label: 'テンポ走', km: 12, detail: 'LT強化' },
+    6:  { type: 'done',   label: 'LSD', km: 18, detail: '持久力強化' },
+    9:  { type: 'done',   label: 'ジョグ', km: 6,  detail: 'リカバリー' },
+    11: { type: 'done',   label: 'インターバル', km: 10, detail: 'VO2max強化' },
+    13: { type: 'done',   label: 'LSD', km: 20, detail: '持久力強化' },
+    16: { type: 'missed', label: 'ジョグ', km: 8,  detail: 'リカバリー' },
+    18: { type: 'done',   label: 'テンポ走', km: 12, detail: 'LT強化' },
+    20: { type: 'done',   label: 'LSD', km: 16, detail: '持久力強化' },
+    23: { type: 'done',   label: 'ジョグ', km: 8,  detail: 'リカバリー' },
+    25: { type: 'done',   label: 'インターバル', km: 10, detail: 'VO2max強化' },
+    27: { type: 'today',  label: 'LSD', km: 18, detail: '持久力強化' },
+    28: { type: 'plan',   label: 'レスト', km: 0,  detail: '回復日' },
+    29: { type: 'plan',   label: 'ジョグ', km: 8,  detail: 'リカバリー' },
+    30: { type: 'plan',   label: 'テンポ走', km: 12, detail: 'LT強化' },
+  };
+
+  const weatherData = {
+    27: { icon: '☁️', temp: 14 },
+    28: { icon: '🌤', temp: 16 },
+    29: { icon: '🌧', temp: 12 },
+    30: { icon: '🌦', temp: 13 },
+  };
+
+  const typeColors = {
+    done:   t.doneColor,
+    today:  t.todayColor,
+    plan:   t.planColor,
+    missed: t.missedColor,
+  };
+
+  // Monthly week plan
+  const weeklyPlan = [
+    { week: 'W1', dates: '3/30–4/5',  plan: 40, actual: 40, done: true,  sessions: 'ジョグ+テンポ+LSD' },
+    { week: 'W2', dates: '4/6–12',    plan: 44, actual: 44, done: true,  sessions: 'ジョグ+インターバル+LSD' },
+    { week: 'W3', dates: '4/13–19',   plan: 44, actual: 36, done: false, sessions: 'テンポ+インターバル+LSD' },
+    { week: 'W4', dates: '4/20–26',   plan: 42, actual: 28, done: false, sessions: 'ジョグ+LSD（今週）' },
+  ];
+
+  const cells = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto' }} className="hide-scroll">
+      {/* Header */}
+      <div style={{ padding: '14px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: t.text }}>2026年 4月</div>
+          <div style={{ fontSize: 12, color: t.text2, marginTop: 1 }}>東京マラソンまで 243日</div>
+        </div>
+        <div style={{ display: 'flex',
+          background: t.isDark ? 'rgba(26,26,40,0.9)' : 'rgba(255,255,255,0.85)',
+          border: `1px solid ${t.border}`, borderRadius: 10, padding: 3 }}>
+          {['month','week'].map(v => (
+            <button key={v} onClick={() => setView(v)} style={{
+              padding: '5px 14px', borderRadius: 8, border: 'none',
+              background: view === v ? `${t.accent}22` : 'transparent',
+              color: view === v ? t.accent : t.text2,
+              fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            }}>{v === 'month' ? '月' : '週'}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div style={{ padding: '8px 20px 0', display: 'flex', gap: 14 }}>
+        {[['done','完了'],['plan','予定'],['missed','未達'],['today','今日']].map(([type, label]) => (
+          <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: typeColors[type] }}/>
+            <span style={{ fontSize: 10, color: t.text3 }}>{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div style={{ padding: '10px 14px 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', marginBottom: 4 }}>
+          {weekDays.map((d,i) => (
+            <div key={d} style={{ textAlign: 'center', fontSize: 11, padding: '3px 0', fontWeight: 600,
+              color: i === 0 ? t.danger : i === 6 ? t.accent2 : t.text3 }}>{d}</div>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px' }}>
+          {cells.map((day, i) => {
+            if (!day) return <div key={i}/>;
+            const td = trainingData[day];
+            const isSelected = day === selectedDay;
+            const dotColor = td ? typeColors[td.type] : null;
+            const weather = weatherData[day];
+            return (
+              <div key={i} onClick={() => setSelectedDay(day)} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: '5px 2px', borderRadius: 10, cursor: 'pointer', minHeight: 56,
+                background: isSelected ? `${t.accent}16` : 'transparent',
+                border: isSelected ? `1px solid ${t.accent}44` : '1px solid transparent',
+              }}>
+                <span style={{
+                  fontSize: 15, fontWeight: day === today ? 700 : 400,
+                  color: day === today ? t.todayColor : day < today ? t.text : t.text2,
+                }}>{day}</span>
+                {dotColor && (
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor,
+                    margin: '2px 0', boxShadow: `0 0 5px ${dotColor}70` }}/>
+                )}
+                {weather && <span style={{ fontSize: 13 }}>{weather.icon}</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Today's motivational training card ── */}
+      <div style={{ padding: '12px 14px 0' }}>
+        <div style={{
+          borderRadius: 16, overflow: 'hidden',
+          background: t.isDark
+            ? 'linear-gradient(135deg, rgba(197,255,71,0.08), rgba(71,184,255,0.06))'
+            : 'linear-gradient(135deg, rgba(74,120,210,0.08), rgba(40,176,132,0.06))',
+          border: `1px solid ${t.borderAccent}`,
+          boxShadow: t.isDark ? 'none' : '0 3px 16px rgba(74,120,210,0.12)',
+        }}>
+          {/* Header strip */}
+          <div style={{
+            padding: '10px 14px 8px',
+            background: t.isDark
+              ? 'linear-gradient(90deg, rgba(197,255,71,0.12), rgba(71,184,255,0.08))'
+              : 'linear-gradient(90deg, rgba(74,120,210,0.12), rgba(40,176,132,0.08))',
+            borderBottom: `1px solid ${t.borderAccent}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ fontSize: 18 }}>🔥</span>
+              <div>
+                <div style={{ fontSize: 10, color: t.text3, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  4月27日（月）今日のトレーニング
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>
+                  LSD — Long Slow Distance
+                </div>
+              </div>
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ fontSize: 22 }}>☁️</div>
+              <div style={{ fontSize: 11, color: t.text2 }}>14°C</div>
+            </div>
+          </div>
+
+          {/* Main stats */}
+          <div style={{ padding: '10px 14px 0' }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              {[
+                { label: '距離', value: '18 km', color: t.accent },
+                { label: 'ペース', value: "6'30\"/km", color: t.accent2 },
+                { label: '想定時間', value: '1h 57m', color: t.accent3 || t.danger },
+              ].map(s => (
+                <div key={s.label} style={{
+                  flex: 1, padding: '8px 8px 7px',
+                  background: t.isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.7)',
+                  borderRadius: 10, border: `1px solid ${t.border}`, textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
+                  <div style={{ fontSize: 10, color: t.text3, marginTop: 1 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Motivational message */}
+            <div style={{
+              padding: '9px 12px', borderRadius: 10,
+              background: t.isDark ? 'rgba(197,255,71,0.06)' : 'rgba(74,120,210,0.07)',
+              border: `1px solid ${t.borderAccent}`,
+              marginBottom: 10,
+            }}>
+              <div style={{ fontSize: 12, color: t.text, lineHeight: 1.65, fontStyle: 'italic' }}>
+                💬 「LSDは体脂肪燃焼と有酸素基盤づくりに最適。会話できるくらいのペースで、じっくり距離を稼ごう。今日の18kmは東京マラソン完走への大きな一歩！」
+              </div>
+            </div>
+
+            {/* HR zone + tips */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <div style={{
+                flex: 1, padding: '7px 10px', borderRadius: 10,
+                background: t.isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.7)',
+                border: `1px solid ${t.border}`,
+              }}>
+                <div style={{ fontSize: 10, color: t.text3, marginBottom: 2 }}>心拍ゾーン</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: t.accent2 }}>Zone 2</div>
+                <div style={{ fontSize: 10, color: t.text3 }}>最大心拍の 65–75%</div>
+              </div>
+              <div style={{
+                flex: 1, padding: '7px 10px', borderRadius: 10,
+                background: t.isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.7)',
+                border: `1px solid ${t.border}`,
+              }}>
+                <div style={{ fontSize: 10, color: t.text3, marginBottom: 2 }}>推奨コース</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: t.accent }}>平坦ルート</div>
+                <div style={{ fontSize: 10, color: t.text3 }}>アップダウン少なめ</div>
+              </div>
+              <div style={{
+                flex: 1, padding: '7px 10px', borderRadius: 10,
+                background: t.isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.7)',
+                border: `1px solid ${t.border}`,
+              }}>
+                <div style={{ fontSize: 10, color: t.text3, marginBottom: 2 }}>補給</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: t.accent3 || t.danger }}>10km以降</div>
+                <div style={{ fontSize: 10, color: t.text3 }}>ジェル1本推奨</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Monthly training plan ── */}
+      <div style={{ padding: '12px 14px 0' }}>
+        <div style={{ fontSize: 11, color: t.text3, fontWeight: 600, letterSpacing: '0.08em',
+          textTransform: 'uppercase', marginBottom: 8 }}>4月 月間計画</div>
+        <div style={{
+          background: t.cardBg, border: `1px solid ${t.border}`,
+          borderRadius: 14, overflow: 'hidden',
+          boxShadow: t.isDark ? 'none' : '0 2px 10px rgba(30,60,120,0.07)',
+        }}>
+          {/* Total progress — game XP style */}
+          <div style={{ padding: '14px 14px 12px', borderBottom: `1px solid ${t.separatorColor}` }}>
+            {/* Row 1: Level badge + distance + streak */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {/* Level badge */}
+                <div style={{
+                  padding: '4px 9px', borderRadius: 6,
+                  background: t.isDark
+                    ? 'linear-gradient(135deg, #C5FF47, #47B8FF)'
+                    : 'linear-gradient(135deg, #4A78D2, #28B084)',
+                  fontSize: 11, fontWeight: 800, letterSpacing: '0.04em',
+                  color: t.isDark ? '#08080F' : '#FFF',
+                  animation: 'lvBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)',
+                }}>LV.4</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                  <span style={{ fontSize: 26, fontWeight: 800, color: t.accent, letterSpacing: '-0.04em' }}>128</span>
+                  <span style={{ fontSize: 12, color: t.text2 }}>/ 170 km</span>
+                </div>
+              </div>
+              {/* Streak pill */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '5px 12px', borderRadius: 99,
+                background: 'rgba(255,120,0,0.12)',
+                border: '1px solid rgba(255,120,0,0.28)',
+              }}>
+                <span style={{ fontSize: 16, display: 'inline-block', animation: 'flamePulse 1.6s ease-in-out infinite' }}>🔥</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: '#FF7800' }}>12</span>
+                <span style={{ fontSize: 10, color: t.text3 }}>日連続</span>
+              </div>
+            </div>
+
+            {/* XP bar with milestone markers */}
+            <div style={{ position: 'relative', paddingBottom: 18 }}>
+              {/* Milestone markers (above bar) */}
+              {[{km:50,pct:29,icon:'🏅',done:true},{km:100,pct:59,icon:'⭐',done:true},{km:150,pct:88,icon:'🎯',done:false}].map(m => (
+                <div key={m.km} style={{
+                  position: 'absolute', top: 0, left: `${m.pct}%`,
+                  transform: 'translateX(-50%)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  zIndex: 2,
+                }}>
+                  <span style={{ fontSize: 13, filter: m.done ? 'none' : 'grayscale(0.6)', opacity: m.done ? 1 : 0.45 }}>{m.icon}</span>
+                </div>
+              ))}
+
+              {/* Bar track */}
+              <div style={{
+                height: 16, marginTop: 18,
+                background: t.progressBg,
+                borderRadius: 4, overflow: 'hidden', position: 'relative',
+              }}>
+                {/* Segment lines */}
+                {[25,50,75].map(pct => (
+                  <div key={pct} style={{
+                    position: 'absolute', left: `${pct}%`, top: 0,
+                    width: 1, height: '100%',
+                    background: t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                    zIndex: 2,
+                  }}/>
+                ))}
+                {/* Fill */}
+                <div style={{
+                  width: '75%', height: '100%', borderRadius: 3,
+                  background: t.isDark
+                    ? 'linear-gradient(90deg, #C5FF47 0%, #47B8FF 100%)'
+                    : 'linear-gradient(90deg, #4A78D2 0%, #28B084 100%)',
+                  animation: 'xpFill 1.2s cubic-bezier(0.4,0,0.2,1)',
+                  position: 'relative', overflow: 'hidden',
+                }}>
+                  {/* Shine sweep */}
+                  <div style={{
+                    position: 'absolute', top: 0, width: '45%', height: '100%',
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)',
+                    animation: 'shineSweep 3.5s ease-in-out infinite',
+                  }}/>
+                  {/* Inner highlight */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
+                    background: 'rgba(255,255,255,0.2)', borderRadius: '3px 3px 0 0' }}/>
+                </div>
+                {/* Current position marker */}
+                <div style={{
+                  position: 'absolute', top: -3, left: '75%',
+                  transform: 'translateX(-50%)',
+                  width: 6, height: 22, borderRadius: 3,
+                  background: t.isDark ? '#EEEEF8' : '#1A2440',
+                  boxShadow: `0 0 8px ${t.accent}`,
+                }}/>
+              </div>
+
+              {/* Milestone labels (below bar) */}
+              <div style={{ position: 'relative', height: 16, marginTop: 4 }}>
+                {[{km:50,pct:29},{km:100,pct:59},{km:150,pct:88},{km:170,pct:100}].map(m => (
+                  <span key={m.km} style={{
+                    position: 'absolute', left: `${m.pct}%`,
+                    transform: 'translateX(-50%)',
+                    fontSize: 9, color: t.text3, whiteSpace: 'nowrap',
+                  }}>{m.km}km</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+              {[['75%','達成率', t.accent],['42km','残り', t.text2],['3週','残り', t.text3]].map(([val,label,color]) => (
+                <div key={label} style={{
+                  flex: 1, textAlign: 'center', padding: '6px 4px',
+                  background: t.statsBg, borderRadius: 8,
+                }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color, letterSpacing: '-0.02em' }}>{val}</div>
+                  <div style={{ fontSize: 10, color: t.text3 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Week breakdown */}
+          <div style={{ padding: '8px 0' }}>
+            {weeklyPlan.map((w, i) => {
+              const pct = Math.round((w.actual / w.plan) * 100);
+              const isCurrentWeek = i === 3;
+              return (
+                <div key={i} style={{
+                  padding: '7px 14px',
+                  background: isCurrentWeek ? `${t.accent}08` : 'transparent',
+                  borderLeft: isCurrentWeek ? `3px solid ${t.accent}` : '3px solid transparent',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: isCurrentWeek ? t.accent : t.text2,
+                      minWidth: 22 }}>{w.week}</span>
+                    <span style={{ fontSize: 10, color: t.text3, flex: 1 }}>{w.dates} · {w.sessions}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600,
+                      color: w.done ? t.doneColor : isCurrentWeek ? t.accent : t.text2 }}>
+                      {w.actual}/{w.plan}km
+                    </span>
+                    <span style={{ fontSize: 10, fontWeight: 600,
+                      color: w.done ? t.doneColor : isCurrentWeek ? t.accent : t.text3,
+                      minWidth: 30, textAlign: 'right' }}>{pct}%</span>
+                  </div>
+                  <ProgressBar value={w.actual} max={w.plan} height={3}
+                    color={w.done ? t.doneColor : isCurrentWeek ? t.accent : t.planColor}/>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ height: 20 }}/>
+    </div>
+  );
+};
+
+Object.assign(window, { CalendarScreen });
+
+// ─── Record Screen ────────────────────────────────────────────────────
+
+const RecordScreen = ({ onNavigate }) => {
+  const t = useTheme();
+  const [tab, setTab] = useState('suunto');
+  const [uploaded, setUploaded] = useState(false);
+  const [parsed, setParsed] = useState(false);
+  const [form, setForm] = useState({ distance: '18.2', time: '1:58:24', pace: "6'31\"", hr: '142', note: '' });
+  const [saved, setSaved] = useState(false);
+
+  const handleUpload = () => {
+    setUploaded(true);
+    setTimeout(() => setParsed(true), 1200);
+  };
+
+  const handleSave = () => {
+    setSaved(true);
+    setTimeout(() => { setSaved(false); onNavigate && onNavigate('home'); }, 1800);
+  };
+
+  const Field = ({ label, value, unit, color, onChange }) => (
+    <div style={{ flex: 1, minWidth: '42%' }}>
+      <div style={{ fontSize: 10, color: t.text3, fontWeight: 600, letterSpacing: '0.06em',
+        marginBottom: 5, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4,
+        background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 10, padding: '10px 12px',
+        boxShadow: t.isDark ? 'none' : '0 1px 4px rgba(0,0,0,0.06)' }}>
+        <input value={value} onChange={e => onChange && onChange(e.target.value)}
+          style={{ flex: 1, background: 'none', border: 'none', outline: 'none',
+            fontSize: 20, fontWeight: 700, color: color || t.text,
+            fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '-0.02em', width: '100%' }}/>
+        {unit && <span style={{ fontSize: 11, color: t.text3, flexShrink: 0 }}>{unit}</span>}
+      </div>
+    </div>
+  );
+
+  if (saved) return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+      <div style={{ width: 72, height: 72, borderRadius: '50%',
+        background: `${t.accent}22`, border: `2px solid ${t.accent}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        animation: 'pop 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}>
+        <Icon name="check" size={32} color={t.accent} strokeWidth={2.5}/>
+      </div>
+      <div style={{ fontSize: 18, fontWeight: 700, color: t.text }}>記録しました！</div>
+      <div style={{ fontSize: 13, color: t.text2 }}>マイタウンが少し成長しました 🏙️</div>
+    </div>
+  );
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto' }} className="hide-scroll">
+      <div style={{ padding: '14px 20px 12px', borderBottom: `1px solid ${t.border}` }}>
+        <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: t.text }}>記録する</div>
+        <div style={{ fontSize: 12, color: t.text2, marginTop: 1 }}>4月27日（月）</div>
+      </div>
+
+      {/* Type tabs */}
+      <div style={{ padding: '12px 20px 0', display: 'flex', gap: 8 }}>
+        {[['suunto','Suunto画像'],['manual','手動入力'],['gym','筋トレ']].map(([type, label]) => (
+          <button key={type} onClick={() => { setTab(type); setUploaded(false); setParsed(false); }} style={{
+            flex: 1, padding: '8px 4px', borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: tab === type ? `${t.accent}1A` : t.isDark ? 'rgba(26,26,40,0.6)' : 'rgba(255,255,255,0.7)',
+            color: tab === type ? t.accent : t.text2,
+            fontSize: 11, fontWeight: 600,
+            outline: tab === type ? `1px solid ${t.accent}44` : `1px solid ${t.border}`,
+            boxShadow: t.isDark ? 'none' : '0 1px 4px rgba(0,0,0,0.05)',
+          }}>{label}</button>
+        ))}
+      </div>
+
+      <div style={{ padding: '16px 20px 0' }}>
+        {/* Suunto upload */}
+        {tab === 'suunto' && !uploaded && (
+          <div onClick={handleUpload} style={{
+            border: `1.5px dashed ${t.accent}44`, borderRadius: 16,
+            padding: '36px 20px', textAlign: 'center', cursor: 'pointer',
+            background: `${t.accent}08`,
+          }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: `${t.accent}18`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <Icon name="upload" size={26} color={t.accent}/>
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 6 }}>
+              Suuntoスクリーンショットを追加
+            </div>
+            <div style={{ fontSize: 12, color: t.text2, lineHeight: 1.6 }}>
+              タップしてギャラリーから選択<br/>または長押しで撮影
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <Pill>AIが自動読み取り</Pill>
+            </div>
+          </div>
+        )}
+
+        {tab === 'suunto' && uploaded && !parsed && (
+          <div style={{ border: `1.5px solid ${t.borderAccent}`, borderRadius: 16,
+            padding: '32px', textAlign: 'center',
+            background: t.isDark ? 'transparent' : 'rgba(255,255,255,0.5)' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%',
+              background: `conic-gradient(${t.accent} 60%, ${t.accent}22 60%)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 12px', animation: 'spin 1s linear infinite' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: t.bg }}/>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: t.text }}>AI解析中...</div>
+            <div style={{ fontSize: 12, color: t.text2, marginTop: 4 }}>距離・タイム・ペース・心拍を読み取っています</div>
+          </div>
+        )}
+
+        {tab === 'suunto' && parsed && (
+          <div style={{ border: `1px solid ${t.borderAccent}`, borderRadius: 16, overflow: 'hidden',
+            boxShadow: t.isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <div style={{ height: 72, background: t.isDark
+                ? 'linear-gradient(135deg, #1a1a3a, #0a2a2a)'
+                : 'linear-gradient(135deg, #E8F4FF, #FFF5EC)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, color: t.text3, letterSpacing: '0.04em' }}>
+              <span style={{ opacity: 0.5 }}>── Suunto App スクリーンショット ──</span>
+            </div>
+            <div style={{ padding: '8px 12px', background: `${t.accent}0A`,
+              display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="check" size={14} color={t.accent} strokeWidth={2.5}/>
+              <span style={{ fontSize: 12, color: t.accent, fontWeight: 600 }}>4項目を自動読み取りしました</span>
+            </div>
+          </div>
+        )}
+
+        {/* Manual / Gym form */}
+        {(tab === 'manual' || tab === 'gym' || parsed) && (
+          <div style={{ marginTop: tab === 'suunto' ? 14 : 0 }}>
+            {tab === 'gym' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[['種目','プッシュアップ'],['セット数','3'],['回数','20']].map(([label, val]) => (
+                  <div key={label}>
+                    <div style={{ fontSize: 10, color: t.text3, fontWeight: 600,
+                      letterSpacing: '0.06em', marginBottom: 5, textTransform: 'uppercase' }}>{label}</div>
+                    <input defaultValue={val} placeholder={label} style={{
+                      width: '100%', padding: '12px 14px', borderRadius: 10,
+                      background: t.inputBg, border: `1px solid ${t.border}`,
+                      color: t.text, fontSize: 15, outline: 'none',
+                      fontFamily: 'Space Grotesk, sans-serif',
+                      boxShadow: t.isDark ? 'none' : '0 1px 4px rgba(0,0,0,0.06)',
+                    }}/>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                  <Field label="距離" value={form.distance} unit="km" color={t.accent}
+                    onChange={v => setForm(f => ({ ...f, distance: v }))}/>
+                  <Field label="タイム" value={form.time} color={t.accent2}
+                    onChange={v => setForm(f => ({ ...f, time: v }))}/>
+                  <Field label="ペース" value={form.pace} unit="/km" color={t.accent3}
+                    onChange={v => setForm(f => ({ ...f, pace: v }))}/>
+                  <Field label="心拍数" value={form.hr} unit="bpm" color={t.danger}
+                    onChange={v => setForm(f => ({ ...f, hr: v }))}/>
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontSize: 10, color: t.text3, fontWeight: 600,
+                    letterSpacing: '0.06em', marginBottom: 5, textTransform: 'uppercase' }}>メモ</div>
+                  <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+                    placeholder="感想・コメントを追加..." rows={2} style={{
+                      width: '100%', padding: '12px 14px', borderRadius: 10,
+                      background: t.inputBg, border: `1px solid ${t.border}`,
+                      color: t.text, fontSize: 13, outline: 'none', resize: 'none',
+                      fontFamily: 'Space Grotesk, sans-serif',
+                    }}/>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {(tab !== 'suunto' || parsed) && (
+          <button onClick={handleSave} style={{
+            width: '100%', marginTop: 20, padding: '15px',
+            background: t.buttonGradient, border: 'none', borderRadius: 14,
+            fontSize: 16, fontWeight: 700, color: t.accentText, cursor: 'pointer',
+            boxShadow: `0 4px 20px ${t.accent}44`,
+          }}>記録を保存する</button>
+        )}
+      </div>
+      <div style={{ height: 20 }}/>
+    </div>
+  );
+};
+
+Object.assign(window, { RecordScreen });
+
+// ─── My Town Screen — Minecraft/SimCity Style ────────────────────────
+
+const TownScreen = () => {
+  const t = useTheme();
+  const [selectedFriend, setSelectedFriend] = useState(null);
+
+  const milestones = [
+    { km: 50,   label: '最初の道路',   done: true,  icon: '🛣️' },
+    { km: 100,  label: '公園オープン', done: true,  icon: '🌳' },
+    { km: 200,  label: '川・橋が完成', done: true,  icon: '🌉' },
+    { km: 300,  label: 'スタジアム',   done: false, icon: '🏟️' },
+    { km: 500,  label: '森林エリア',   done: false, icon: '🌲' },
+    { km: 1000, label: '大都市へ',     done: false, icon: '🌆' },
+  ];
+
+  const friends = [
+    { name: '田中', km: 312, stage: 3, unlocked: 'スタジアム完成！' },
+    { name: '鈴木', km: 189, stage: 2, unlocked: '川・橋が完成' },
+    { name: '山本', km: 88,  stage: 1, unlocked: '公園オープン間近' },
+  ];
+
+  // ─── Pixel tree helper (Minecraft oak style) ───
+  const PixelTree = ({ x, y, isDark: dark }) => {
+    const trunk = dark ? '#3A2008' : '#6A4018';
+    const l1    = dark ? '#163808' : '#2A5E10';
+    const l2    = dark ? '#1E4A10' : '#387A18';
+    return (
+      <g>
+        <rect x={x+7}  y={y+22} width={6} height={16} fill={trunk}/>
+        <rect x={x}    y={y+14} width={20} height={10} fill={l1}/>
+        <rect x={x+2}  y={y+8}  width={16} height={8}  fill={l2}/>
+        <rect x={x+4}  y={y+2}  width={12} height={8}  fill={l1}/>
+        <rect x={x+6}  y={y}    width={8}  height={4}  fill={l2}/>
+      </g>
+    );
+  };
+
+  // ─── Pixel building helper ───
+  const PixelBuilding = ({ x, y, w, h, fill, dark, winColor, winRows=4, winCols=2, roofColor }) => {
+    const wSpacing = Math.floor(w / (winCols + 1));
+    const hSpacing = Math.floor(h / (winRows + 1));
+    const wins = [];
+    for (let r = 0; r < winRows; r++) {
+      for (let c = 0; c < winCols; c++) {
+        wins.push({ x: x + wSpacing*(c+1) - 4, y: y + hSpacing*(r+1) - 3 });
+      }
+    }
+    // horizontal mortar lines every 8px
+    const mortarLines = Array.from({ length: Math.ceil(h/8) }, (_, i) => i);
+    return (
+      <g>
+        <rect x={x} y={y} width={w} height={h} fill={fill}/>
+        {mortarLines.map(i => (
+          <rect key={i} x={x} y={y+i*8} width={w} height={1} fill={dark} opacity="0.45"/>
+        ))}
+        {/* vertical block breaks every 16px */}
+        {Array.from({length: Math.ceil(w/16)}, (_,i) => (
+          <rect key={i} x={x+i*16} y={y} width={1} height={h} fill={dark} opacity="0.3"/>
+        ))}
+        {wins.map((win, i) => (
+          <rect key={i} x={win.x} y={win.y} width={8} height={6} fill={winColor}/>
+        ))}
+        {roofColor && <rect x={x-2} y={y-4} width={w+4} height={6} fill={roofColor}/>}
+      </g>
+    );
+  };
+
+  // ══════════════════════════════════════════════════════
+  // DAY TOWN — bright Minecraft world
+  // ══════════════════════════════════════════════════════
+  const DayTown = () => (
+    <svg viewBox="0 0 360 240" style={{ width: '100%', height: 240 }}>
+      {/* Sky */}
+      <rect width="360" height="240" fill="#7EC4E8"/>
+
+      {/* Minecraft sun — square */}
+      <rect x="304" y="10" width="32" height="32" fill="#FFE040"/>
+      <rect x="308" y="14" width="24" height="24" fill="#FFD000"/>
+      {/* Sun rays (blocky) */}
+      <rect x="316" y="4"  width="8" height="6"  fill="#FFE040" opacity="0.7"/>
+      <rect x="316" y="36" width="8" height="6"  fill="#FFE040" opacity="0.7"/>
+      <rect x="298" y="22" width="6" height="8"  fill="#FFE040" opacity="0.7"/>
+      <rect x="330" y="22" width="6" height="8"  fill="#FFE040" opacity="0.7"/>
+
+      {/* Blocky clouds */}
+      <rect x="18"  y="16" width="56" height="12" fill="#F8F8F8"/>
+      <rect x="12"  y="22" width="68" height="10" fill="#F8F8F8"/>
+      <rect x="24"  y="10" width="32" height="8"  fill="#F8F8F8"/>
+      <rect x="170" y="12" width="60" height="12" fill="#EFEFEF"/>
+      <rect x="164" y="18" width="72" height="10" fill="#EFEFEF"/>
+      <rect x="178" y="6"  width="36" height="8"  fill="#EFEFEF"/>
+
+      {/* Background distant buildings (gray/muted) */}
+      <rect x="242" y="118" width="24" height="66" fill="#A8B4C0"/>
+      <rect x="268" y="128" width="20" height="56" fill="#98A8B8"/>
+      <rect x="290" y="112" width="22" height="72" fill="#A0ACBC"/>
+      <rect x="314" y="122" width="18" height="62" fill="#98A4B4"/>
+      <rect x="334" y="130" width="24" height="54" fill="#A8B0C0"/>
+      {/* distant windows (tiny) */}
+      {[[245,124],[250,124],[245,136],[250,136],[245,148],[250,148]].map(([wx,wy],i) => (
+        <rect key={i} x={wx} y={wy} width={4} height={3} fill="#C8D8E8" opacity="0.6"/>
+      ))}
+
+      {/* === Ground layers === */}
+      {/* Grass top blocks */}
+      <rect x="0" y="180" width="360" height="14" fill="#5AA82A"/>
+      {/* Grass texture patches */}
+      {[0,16,32,48,64,80,96,112,128,144,160,176,192,208,224,240,256,272,288,304,320,336,352].map(x => (
+        <rect key={x} x={x} y={180} width={8} height={6} fill="#4A9020" opacity={x%32===0?0.6:0.3}/>
+      ))}
+      {/* Dirt layer */}
+      <rect x="0" y="194" width="360" height="46" fill="#8B6432"/>
+      {/* Dirt texture */}
+      {[0,24,48,72,96,120,144,168,192,216,240,264,288,312,336].map(x => (
+        <rect key={x} x={x+4} y={198} width={16} height={6} fill="#7A5428" opacity="0.5"/>
+      ))}
+      {/* Stone road */}
+      <rect x="0" y="194" width="360" height="14" fill="#8A8A98"/>
+      <rect x="0" y="194" width="360" height="2"  fill="#9898A8"/>
+      <rect x="0" y="206" width="360" height="2"  fill="#787888"/>
+      {/* Road markings */}
+      {[8,40,72,104,136,168,200,232,264,296,328].map(x => (
+        <rect key={x} x={x} y={199} width={20} height={4} fill="#BCBCCC"/>
+      ))}
+
+      {/* === Park area (left) === */}
+      <rect x="2"  y="168" width="62" height="14" fill="#38900C"/>
+      <rect x="2"  y="168" width="62" height="4"  fill="#2E7808"/>
+      {/* Garden path */}
+      <rect x="22" y="170" width="20" height="10" fill="#C8B878" opacity="0.7"/>
+      <PixelTree x={2}  y={128}/>
+      <PixelTree x={36} y={132}/>
+
+      {/* === HERO: Stone Castle Tower === */}
+      {/* Foundation */}
+      <rect x="70" y="176" width="52" height="6"  fill="#505060"/>
+      {/* Main body - cobblestone */}
+      <rect x="72" y="52"  width="48" height="126" fill="#6E6E7A"/>
+      {/* Block texture */}
+      {[0,8,16,24,32,40,48,56,64,72,80,88,96,104,112,120].map(i => (
+        <rect key={i} x={72} y={52+i} width={48} height={1} fill="#585868" opacity="0.5"/>
+      ))}
+      {[0,16,32,48].map(i => (
+        <rect key={i} x={72+i} y={52} width={1} height={126} fill="#585868" opacity="0.3"/>
+      ))}
+      {/* Battlements */}
+      {[72,84,96,108].map(x => (
+        <rect key={x} x={x} y={44} width={8} height={10} fill="#6E6E7A"/>
+      ))}
+      <rect x="72" y="52" width="48" height="3" fill="#505060"/>
+      {/* Windows - stone tower style */}
+      {[0,1,2].map(col => [0,1,2,3,4,5,6].map(row => (
+        <rect key={`${col}-${row}`}
+          x={78+col*14} y={58+row*16}
+          width={9} height={10}
+          fill={col===1&&row===3 ? '#FFD060' : '#90B8D8'}
+          opacity={col===1&&row===3 ? 0.9 : 0.75}/>
+      )))}
+      {/* Tower flag */}
+      <rect x="92" y="36" width="2" height="12" fill="#4A2808"/>
+      <rect x="94" y="36" width="10" height="8"  fill="#CC3030"/>
+
+      {/* === Brick Building === */}
+      <rect x="126" y="90"  width="38" height="90" fill="#B85040"/>
+      {[0,8,16,24,32,40,48,56,64,72,80].map(i => (
+        <rect key={i} x={126} y={90+i} width={38} height={1} fill="#983830" opacity="0.5"/>
+      ))}
+      {[0,12,24,36].map(i => (
+        <rect key={i} x={126+i} y={90} width={1} height={90} fill="#983830" opacity="0.3"/>
+      ))}
+      {/* Brick windows */}
+      {[0,1].map(col => [0,1,2,3,4].map(row => (
+        <rect key={`${col}-${row}`}
+          x={132+col*16} y={98+row*16}
+          width={10} height={8} fill="#D4C870" opacity={0.7+row*0.04}/>
+      )))}
+      {/* Awning */}
+      <rect x="124" y="88" width="42" height="5" fill="#C84020"/>
+
+      {/* === River (blue water blocks) === */}
+      <rect x="168" y="164" width="72" height="18" fill="#4A8CD4"/>
+      {/* Water blocks pattern */}
+      {[168,184,200,216,232].map(x => (
+        <rect key={x} x={x} y={164} width={14} height={18} fill="#5898DC" opacity="0.5"/>
+      ))}
+      <rect x="168" y="164" width="72" height="3"  fill="#6AA8E0" opacity="0.7"/>
+      <rect x="168" y="178" width="72" height="3"  fill="#3878C0" opacity="0.5"/>
+
+      {/* Bridge (stone blocks over river) */}
+      <rect x="188" y="158" width="32" height="8"  fill="#888898"/>
+      <rect x="188" y="156" width="32" height="4"  fill="#9898A8"/>
+      <rect x="192" y="148" width="6"  height="12" fill="#787888"/>
+      <rect x="210" y="148" width="6"  height="12" fill="#787888"/>
+
+      {/* === Glass Office Tower === */}
+      <rect x="168" y="72"  width="40" height="92" fill="#6898C8"/>
+      {[0,8,16,24,32,40,48,56,64,72,80].map(i => (
+        <rect key={i} x={168} y={72+i} width={40} height={1} fill="#5080B0" opacity="0.4"/>
+      ))}
+      {/* Glass windows (large blue panes) */}
+      {[0,1,2].map(col => [0,1,2,3,4,5].map(row => (
+        <rect key={`${col}-${row}`}
+          x={172+col*12} y={78+row*14}
+          width={9} height={10} fill="#A8D0F0" opacity="0.65"/>
+      )))}
+      <rect x="166" y="68" width="44" height="6" fill="#5080B0"/>
+
+      {/* === Wooden Houses (right side) === */}
+      {/* House 1 */}
+      <rect x="248" y="148" width="28" height="34" fill="#BC9448"/>
+      {[0,8,16,24,32].map(i => (
+        <rect key={i} x={248} y={148+i} width={28} height={1} fill="#9A7830" opacity="0.5"/>
+      ))}
+      <rect x="248" y="140" width="28" height="10" fill="#8A2020"/>
+      <rect x="252" y="154" width={8}  height={8}  fill="#90C4E0" opacity="0.7"/>
+      <rect x="264" y="154" width={8}  height={8}  fill="#90C4E0" opacity="0.7"/>
+      <rect x="256" y="164" width={12} height={18} fill="#7A5820"/>
+      {/* House 2 */}
+      <rect x="280" y="152" width="24" height="30" fill="#A88040"/>
+      <rect x="280" y="144" width="24" height="10" fill="#203878"/>
+      <rect x="284" y="158" width={7}  height={7}  fill="#90C4E0" opacity="0.7"/>
+      <rect x="294" y="158" width={7}  height={7}  fill="#90C4E0" opacity="0.7"/>
+      <rect x="286" y="167" width={10} height={15} fill="#886830"/>
+
+      {/* === STADIUM (Locked — Minecraft arena outline) === */}
+      <g opacity="0.35">
+        {/* Arena walls */}
+        <rect x="316" y="146" width="42" height="36" fill="none"/>
+        <rect x="316" y="146" width="42" height="4"  fill="#906030" opacity="0.5"/>
+        <rect x="316" y="178" width="42" height="4"  fill="#906030" opacity="0.5"/>
+        <rect x="316" y="146" width="4"  height="36" fill="#906030" opacity="0.5"/>
+        <rect x="354" y="146" width="4"  height="36" fill="#906030" opacity="0.5"/>
+        {/* Internal grid = seats */}
+        {[152,158,164,170,176].map(y => (
+          <rect key={y} x={322} y={y} width={34} height={2} fill="#B07840" opacity="0.4"/>
+        ))}
+        {[324,334,344].map(x => (
+          <rect key={x} x={x} y={146} width={2} height={36} fill="#B07840" opacity="0.3"/>
+        ))}
+      </g>
+      <rect x="326" y="158" width="22" height="8" fill="#C09050" opacity="0.2"/>
+      <text x="337" y="165" textAnchor="middle" fontSize="7" fill="#906030" opacity="0.6"
+        fontFamily="Space Grotesk" fontWeight="700">LOCKED</text>
+      <text x="337" y="190" textAnchor="middle" fontSize="7" fill="#906030" opacity="0.5"
+        fontFamily="Space Grotesk">🔒 16km先</text>
+    </svg>
+  );
+
+  // ══════════════════════════════════════════════════════
+  // NIGHT TOWN — Minecraft at night, torch-lit
+  // ══════════════════════════════════════════════════════
+  const NightTown = () => (
+    <svg viewBox="0 0 360 240" style={{ width: '100%', height: 240 }}>
+      {/* Night sky gradient */}
+      <defs>
+        <linearGradient id="nsky2" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#04041A"/>
+          <stop offset="100%" stopColor="#0C0C28"/>
+        </linearGradient>
+        <radialGradient id="tglow" cx="42%" cy="60%" r="35%">
+          <stop offset="0%" stopColor="#FF8C00" stopOpacity="0.12"/>
+          <stop offset="100%" stopColor="#FF8C00" stopOpacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="360" height="240" fill="url(#nsky2)"/>
+      <rect width="360" height="240" fill="url(#tglow)"/>
+
+      {/* Stars */}
+      {[[20,14],[45,8],[70,20],[110,6],[155,16],[200,10],[240,22],[280,8],[320,18],[350,12],
+        [35,30],[90,35],[140,28],[190,38],[250,32],[300,26],[15,45],[165,42],[235,48]].map(([x,y],i) => (
+        <rect key={i} x={x} y={y} width={i%5===0?2:1} height={i%5===0?2:1} fill="white" opacity={0.4+i%3*0.15}/>
+      ))}
+
+      {/* Moon (Minecraft square) */}
+      <rect x="310" y="12" width="26" height="26" fill="#EEEEBB"/>
+      <rect x="314" y="16" width="18" height="18" fill="#D8D8A0"/>
+      <rect x="318" y="20" width="6"  height="6"  fill="#C8C890" opacity="0.6"/>
+
+      {/* Distant buildings (very dark) */}
+      {[[242,128,24,56],[268,138,20,46],[290,122,22,62],[314,132,18,52],[334,140,24,44]].map(([x,y,w,h],i) => (
+        <g key={i}>
+          <rect x={x} y={y} width={w} height={h} fill="#0E0E24"/>
+          {[[x+4,y+8],[x+10,y+8],[x+4,y+20],[x+10,y+20]].map(([wx,wy],j) => (
+            <rect key={j} x={wx} y={wy} width={4} height={4} fill="#FF8C00" opacity={0.4+j*0.1}/>
+          ))}
+        </g>
+      ))}
+
+      {/* Ground layers */}
+      <rect x="0" y="180" width="360" height="14" fill="#1A4A08"/>
+      {[0,16,32,48,64,80,96,112,128,144,160,176,192,208,224,240,256,272,288,304,320,336,352].map(x => (
+        <rect key={x} x={x} y={180} width={8} height={6} fill="#0E3004" opacity={x%32===0?0.6:0.3}/>
+      ))}
+      <rect x="0" y="194" width="360" height="46" fill="#3A2410"/>
+      <rect x="0" y="194" width="360" height="14" fill="#343440"/>
+      <rect x="0" y="194" width="360" height="2"  fill="#404050"/>
+      {[8,40,72,104,136,168,200,232,264,296,328].map(x => (
+        <rect key={x} x={x} y={199} width={20} height={4} fill="#4A4A5A"/>
+      ))}
+
+      {/* Park */}
+      <rect x="2" y="168" width="62" height="14" fill="#0E2804"/>
+      <PixelTree x={2}  y={128} isDark={true}/>
+      <PixelTree x={36} y={132} isDark={true}/>
+
+      {/* HERO Tower (dark stone, torch windows) */}
+      <rect x="70" y="176" width="52" height="6"  fill="#1A1A2A"/>
+      <rect x="72" y="52"  width="48" height="126" fill="#2A2A3A"/>
+      {[0,8,16,24,32,40,48,56,64,72,80,88,96,104,112,120].map(i => (
+        <rect key={i} x={72} y={52+i} width={48} height={1} fill="#1E1E2E" opacity="0.6"/>
+      ))}
+      {[0,16,32,48].map(i => (
+        <rect key={i} x={72+i} y={52} width={1} height={126} fill="#1E1E2E" opacity="0.4"/>
+      ))}
+      {[72,84,96,108].map(x => (
+        <rect key={x} x={x} y={44} width={8} height={10} fill="#2A2A3A"/>
+      ))}
+      <rect x="72" y="52" width="48" height="3" fill="#1A1A2A"/>
+      {[0,1,2].map(col => [0,1,2,3,4,5,6].map(row => (
+        <rect key={`${col}-${row}`}
+          x={78+col*14} y={58+row*16} width={9} height={10}
+          fill={(col+row)%3===0 ? '#FF8C00' : (col+row)%3===1 ? '#FFD060' : '#1A2A3A'}
+          opacity={(col+row)%3===2 ? 0.3 : 0.85}/>
+      )))}
+      {/* Torch glow */}
+      <rect x="72" y="52" width="48" height="126" fill="#FF8C00" opacity="0.03"/>
+      <rect x="92" y="36" width="2"  height="12" fill="#2A1404"/>
+      <rect x="94" y="36" width="10" height="8"  fill="#8B0000"/>
+
+      {/* Brick building */}
+      <rect x="126" y="90"  width="38" height="90" fill="#281818"/>
+      {[0,8,16,24,32,40,48,56,64,72,80].map(i => (
+        <rect key={i} x={126} y={90+i} width={38} height={1} fill="#1A1010" opacity="0.6"/>
+      ))}
+      {[0,1].map(col => [0,1,2,3,4].map(row => (
+        <rect key={`${col}-${row}`}
+          x={132+col*16} y={98+row*16} width={10} height={8}
+          fill={(col+row)%2===0 ? '#FF8C00' : '#FFD060'} opacity={0.6+row*0.06}/>
+      )))}
+      <rect x="124" y="88" width="42" height="5" fill="#180808"/>
+
+      {/* River */}
+      <rect x="168" y="164" width="72" height="18" fill="#0A1A3A"/>
+      {[168,184,200,216,232].map(x => (
+        <rect key={x} x={x} y={164} width={14} height={18} fill="#0E2248" opacity="0.5"/>
+      ))}
+      <rect x="168" y="164" width="72" height="2" fill="#1A3060" opacity="0.7"/>
+      {/* Bridge */}
+      <rect x="188" y="158" width="32" height="8"  fill="#1E1E2E"/>
+      <rect x="192" y="148" width="6"  height="12" fill="#181828"/>
+      <rect x="210" y="148" width="6"  height="12" fill="#181828"/>
+
+      {/* Glass tower */}
+      <rect x="168" y="72"  width="40" height="92" fill="#101828"/>
+      {[0,8,16,24,32,40,48,56,64,72,80].map(i => (
+        <rect key={i} x={168} y={72+i} width={40} height={1} fill="#0C1420" opacity="0.5"/>
+      ))}
+      {[0,1,2].map(col => [0,1,2,3,4,5].map(row => (
+        <rect key={`${col}-${row}`}
+          x={172+col*12} y={78+row*14} width={9} height={10}
+          fill={(col*3+row)%4===0 ? '#C5FF47' : (col*3+row)%4===1 ? '#47B8FF' : '#FF8C00'}
+          opacity={0.5+((col+row)%2)*0.25}/>
+      )))}
+      <rect x="166" y="68" width="44" height="6" fill="#080818"/>
+
+      {/* Wooden houses */}
+      {[[248,148,28,34,'#1E1410'],[280,152,24,30,'#1A1208']].map(([x,y,w,h,c],i) => (
+        <g key={i}>
+          <rect x={x} y={y} width={w} height={h} fill={c}/>
+          <rect x={x} y={y-8} width={w} height={10} fill="#180808"/>
+          {[0,1].map(col => (
+            <rect key={col} x={x+4+col*12} y={y+6} width={8} height={8}
+              fill={col===0?'#FF8C00':'#FFD060'} opacity="0.8"/>
+          ))}
+          <rect x={x+col*10+8} y={y+16} width={10} height={h-14} fill="#110C06"/>
+        </g>
+      ))}
+
+      {/* Stadium (locked) */}
+      <g opacity="0.28">
+        <rect x="316" y="146" width="42" height="4"  fill="#604020"/>
+        <rect x="316" y="178" width="42" height="4"  fill="#604020"/>
+        <rect x="316" y="146" width="4"  height="36" fill="#604020"/>
+        <rect x="354" y="146" width="4"  height="36" fill="#604020"/>
+        {[324,334,344].map(x => (
+          <rect key={x} x={x} y={146} width={2} height={36} fill="#604020" opacity="0.4"/>
+        ))}
+      </g>
+      <text x="337" y="165" textAnchor="middle" fontSize="7" fill="#C5FF47" opacity="0.35"
+        fontFamily="Space Grotesk" fontWeight="700">LOCKED</text>
+      <text x="337" y="190" textAnchor="middle" fontSize="7" fill="#C5FF47" opacity="0.3"
+        fontFamily="Space Grotesk">🔒 16km先</text>
+    </svg>
+  );
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto' }} className="hide-scroll">
+      <div style={{ padding: '14px 20px 10px', borderBottom: `1px solid ${t.border}` }}>
+        <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: t.text }}>マイタウン</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: t.text2 }}>
+            累計 <span style={{ color: t.accent, fontWeight: 700 }}>284 km</span>
+          </div>
+          <Pill color={t.accent2} bg={`${t.accent2}18`}>🏟️ スタジアムまで 16km</Pill>
+        </div>
+      </div>
+
+      {/* Town illustration */}
+      <div style={{ background: t.isDark ? '#04041A' : '#7EC4E8', borderBottom: `1px solid ${t.border}` }}>
+        {t.isDark ? <NightTown/> : <DayTown/>}
+        <div style={{ padding: '6px 20px 4px', background: t.isDark ? '#04041A' : '#7EC4E8' }}>
+          <ProgressBar value={284} max={300} height={4}/>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingBottom: 8 }}>
+            <span style={{ fontSize: 10, color: t.isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.35)' }}>200km 川・橋</span>
+            <span style={{ fontSize: 10, color: t.accent, fontWeight: 600 }}>次: 300km スタジアム</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Milestones */}
+      <div style={{ padding: '14px 20px 0' }}>
+        <SectionLabel>マイルストーン</SectionLabel>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {milestones.map((m, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '9px 13px', borderRadius: 10,
+              background: m.done ? `${t.accent}0A` : t.cardBg,
+              border: `1px solid ${m.done ? t.borderAccent : t.border}`,
+              opacity: i > 3 ? 0.42 : 1,
+              boxShadow: t.isDark ? 'none' : '0 1px 4px rgba(30,60,120,0.06)',
+            }}>
+              <span style={{ fontSize: 18 }}>{m.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: m.done ? t.text : t.text2 }}>{m.label}</div>
+                <div style={{ fontSize: 11, color: t.text3 }}>{m.km} km達成</div>
+              </div>
+              {m.done
+                ? <Icon name="check" size={15} color={t.accent} strokeWidth={2.5}/>
+                : <Icon name="lock" size={15} color={t.text3}/>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Friends' towns */}
+      <div style={{ padding: '14px 20px 0' }}>
+        <SectionLabel>グループの街</SectionLabel>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {friends.map((f, i) => (
+            <Card key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}
+              onClick={() => setSelectedFriend(f.name)}>
+              <Avatar name={f.name} size={38}/>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: 14, color: t.text }}>{f.name}さんの街</div>
+                <div style={{ fontSize: 11, color: t.text2 }}>{f.unlocked}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: t.accent2 }}>
+                  {f.km}<span style={{ fontSize: 10, color: t.text3, fontWeight: 400 }}>km</span>
+                </div>
+                <div style={{ fontSize: 10, color: t.text3 }}>Stage {f.stage}</div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+      <div style={{ height: 20 }}/>
+    </div>
+  );
+};
+
+Object.assign(window, { TownScreen });
+
+// ─── Social Screen ───────────────────────────────────────────────────
+
+const SocialScreen = () => {
+  const t = useTheme();
+  const [tab, setTab] = useState('feed');
+  const [liked, setLiked] = useState({});
+  const [commentOpen, setCommentOpen] = useState(null);
+
+  const rankings = [
+    { name: '田中', km: 142, runs: 14, streak: 12, me: false },
+    { name: '小林', km: 128, runs: 11, streak: 8,  me: true  },
+    { name: '鈴木', km: 98,  runs: 9,  streak: 5,  me: false },
+    { name: '山本', km: 72,  runs: 7,  streak: 3,  me: false },
+    { name: '佐藤', km: 45,  runs: 5,  streak: 1,  me: false },
+  ];
+
+  const feed = [
+    {
+      id: 1, user: '田中', time: '2時間前', type: 'run',
+      title: 'LSD 18.2 km',
+      stats: [['距離','18.2km'],['タイム','1:52:14'],['ペース',"6'10\"/km"]],
+      comment: '今日も気持ちよく走れた！脚の調子がいい感じ 💪',
+      likes: 3, comments: 1,
+    },
+    {
+      id: 2, user: '鈴木', time: '5時間前', type: 'town',
+      title: 'マイタウン アップデート',
+      comment: 'ついにスタジアムが完成しました🏟️！312km達成！',
+      likes: 5, comments: 2,
+    },
+    {
+      id: 3, user: '山本', time: '昨日', type: 'run',
+      title: 'インターバル走 8 km',
+      stats: [['距離','8.0km'],['タイム','42:30'],['ペース',"5'19\"/km"]],
+      comment: 'インターバルきつかった…でも終わった後の爽快感が最高',
+      likes: 2, comments: 0,
+    },
+  ];
+
+  const toggleLike = id => setLiked(l => ({ ...l, [id]: !l[id] }));
+
+  const MedalIcon = ({ rank }) => {
+    if (rank <= 3) return <span style={{ fontSize: 18 }}>{['🥇','🥈','🥉'][rank-1]}</span>;
+    return <span style={{ fontSize: 13, fontWeight: 700, color: t.text3, width: 24, display:'inline-block', textAlign:'center' }}>{rank}</span>;
+  };
+
+  const podiumOrder  = [rankings[1], rankings[0], rankings[2]];
+  const podiumHeights = [80, 104, 64];
+  const podiumLabels  = ['2nd','1st','3rd'];
+  const podiumColors  = ['rgba(192,192,192,0.2)','rgba(255,215,0,0.2)','rgba(205,127,50,0.2)'];
+  const podiumBorder  = ['rgba(192,192,192,0.4)','rgba(255,215,0,0.4)','rgba(205,127,50,0.35)'];
+  const medalColors   = ['#C0C0C0','#FFD700','#CD7F32'];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{ padding: '14px 20px 0', flexShrink: 0 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: t.text, marginBottom: 12 }}>
+          ソーシャル
+        </div>
+        <div style={{ display: 'flex', gap: 0, borderBottom: `1px solid ${t.border}` }}>
+          {[['feed','フィード'],['ranking','ランキング']].map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)} style={{
+              flex: 1, padding: '8px', border: 'none', background: 'none',
+              color: tab === id ? t.accent : t.text3,
+              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              borderBottom: tab === id ? `2px solid ${t.accent}` : '2px solid transparent',
+              marginBottom: -1,
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px 0' }} className="hide-scroll">
+
+        {/* ── Ranking ── */}
+        {tab === 'ranking' && (
+          <>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+              {['今月','今週','累計'].map((p, i) => (
+                <button key={p} style={{
+                  padding: '5px 14px', borderRadius: 99, border: 'none', cursor: 'pointer',
+                  background: i === 0 ? `${t.accent}1A` : t.isDark ? 'rgba(26,26,40,0.8)' : 'rgba(255,255,255,0.75)',
+                  color: i === 0 ? t.accent : t.text2,
+                  fontSize: 11, fontWeight: 600,
+                  outline: i === 0 ? `1px solid ${t.accent}44` : `1px solid ${t.border}`,
+                }}>{p}</button>
+              ))}
+            </div>
+
+            {/* ── Game Scoreboard Podium (マイタウン統一トンマナ) ── */}
+            <div style={{
+              borderRadius: 14, overflow: 'hidden', marginBottom: 14,
+              background: 'linear-gradient(180deg, #0C0A1E 0%, #161228 100%)',
+              border: '1px solid rgba(255,215,0,0.15)',
+            }}>
+              {/* Cup banner */}
+              <div style={{
+                padding: '8px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}>
+                <span style={{ fontSize: 14 }}>🏆</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#FFD700',
+                  letterSpacing: '0.1em', opacity: 0.9 }}>4月 MONTHLY CUP</span>
+                <span style={{ fontSize: 14 }}>🏆</span>
+              </div>
+
+              {/* Podium players */}
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+                gap: 4, padding: '14px 10px 0', position: 'relative' }}>
+
+                {/* 2nd place */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontSize: 18 }}>🥈</span>
+                  <Avatar name={rankings[1].name} size={36}/>
+                  {rankings[1].me && (
+                    <span style={{ fontSize: 9, fontWeight: 700, color: t.accent,
+                      background: `${t.accent}22`, padding: '1px 7px', borderRadius: 4 }}>あなた</span>
+                  )}
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#C0C0C0' }}>{rankings[1].km}km</div>
+                  <div style={{
+                    width: '100%', height: 72,
+                    background: 'linear-gradient(180deg, #5A5A78 0%, #3A3A58 100%)',
+                    borderTop: '2px solid #9898B8',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    justifyContent: 'flex-start', paddingTop: 6,
+                    /* pixel block edge */
+                    boxShadow: 'inset 1px 1px 0 rgba(255,255,255,0.15), inset -1px -1px 0 rgba(0,0,0,0.3)',
+                  }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#C0C0C0' }}>2ND</span>
+                  </div>
+                </div>
+
+                {/* 1st place */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontSize: 20, display: 'inline-block',
+                    animation: 'crownBounce 2s ease-in-out infinite' }}>👑</span>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: '50%',
+                    border: '2px solid #FFD700',
+                    animation: 'podiumGlow 2.5s ease-in-out infinite',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(255,215,0,0.18)',
+                    fontSize: 19, fontWeight: 800, color: '#FFD700',
+                  }}>{rankings[0].name[0]}</div>
+                  {rankings[0].me && (
+                    <span style={{ fontSize: 9, fontWeight: 700, color: t.accent,
+                      background: `${t.accent}22`, padding: '1px 7px', borderRadius: 4 }}>あなた</span>
+                  )}
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#FFD700' }}>{rankings[0].km}km</div>
+                  <div style={{
+                    width: '100%', height: 106,
+                    background: 'linear-gradient(180deg, #B8900A 0%, #8A6800 60%, #6A5000 100%)',
+                    borderTop: '2px solid #FFD700',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    justifyContent: 'flex-start', paddingTop: 8, gap: 6,
+                    boxShadow: '0 -4px 16px rgba(255,215,0,0.3), inset 1px 1px 0 rgba(255,255,255,0.2)',
+                  }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#5A3800' }}>1ST</span>
+                    <span style={{ fontSize: 26 }}>🏆</span>
+                  </div>
+                </div>
+
+                {/* 3rd place */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontSize: 18 }}>🥉</span>
+                  <Avatar name={rankings[2].name} size={34}/>
+                  {rankings[2].me && (
+                    <span style={{ fontSize: 9, fontWeight: 700, color: t.accent,
+                      background: `${t.accent}22`, padding: '1px 7px', borderRadius: 4 }}>あなた</span>
+                  )}
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#CD7F32' }}>{rankings[2].km}km</div>
+                  <div style={{
+                    width: '100%', height: 54,
+                    background: 'linear-gradient(180deg, #7A4A18 0%, #5A3410 100%)',
+                    borderTop: '2px solid #CD7F32',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    justifyContent: 'flex-start', paddingTop: 5,
+                    boxShadow: 'inset 1px 1px 0 rgba(255,255,255,0.12)',
+                  }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#CD7F32' }}>3RD</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom rule */}
+              <div style={{ height: 1, background: 'rgba(255,215,0,0.1)', margin: '0 14px' }}/>
+              <div style={{ padding: '6px 14px 8px', textAlign: 'center' }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,215,0,0.4)', letterSpacing: '0.08em' }}>
+                  次のカップまで 3日
+                </span>
+              </div>
+            </div>
+
+            {/* Full list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {rankings.map((r, i) => (
+                <div key={r.name} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '12px 14px', borderRadius: 12,
+                  background: r.me ? `${t.accent}0C` : t.cardBg,
+                  border: `1px solid ${r.me ? t.borderAccent : t.border}`,
+                  boxShadow: t.isDark ? 'none' : '0 1px 4px rgba(0,0,0,0.05)',
+                }}>
+                  <MedalIcon rank={i+1}/>
+                  <Avatar name={r.name} size={34}/>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: r.me ? 700 : 600,
+                      color: r.me ? t.accent : t.text }}>
+                      {r.name}{r.me ? '（あなた）' : ''}
+                    </div>
+                    <div style={{ fontSize: 11, color: t.text3 }}>{r.runs}回 · {r.streak}日連続</div>
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: r.me ? t.accent : t.text, letterSpacing: '-0.03em' }}>
+                    {r.km}<span style={{ fontSize: 11, color: t.text3, fontWeight: 400 }}>km</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ── Feed ── */}
+        {tab === 'feed' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {feed.map(item => (
+              <Card key={item.id} style={{ padding: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <Avatar name={item.user} size={36}/>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: t.text }}>{item.user}さん</div>
+                    <div style={{ fontSize: 11, color: t.text3 }}>{item.time}</div>
+                  </div>
+                  <Pill color={item.type === 'run' ? t.accent : t.accent3}
+                    bg={item.type === 'run' ? `${t.accent}18` : `${t.accent3}18`}>
+                    {item.type === 'run' ? '🏃 ラン' : '🏟️ タウン'}
+                  </Pill>
+                </div>
+
+                <div style={{ fontSize: 16, fontWeight: 700, color: t.text, marginBottom: 8 }}>{item.title}</div>
+
+                {item.stats && (
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                    {item.stats.map(([label, val]) => (
+                      <div key={label} style={{ flex: 1, background: t.statsBg, borderRadius: 8, padding: '6px 8px' }}>
+                        <div style={{ fontSize: 10, color: t.text3, marginBottom: 2 }}>{label}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{val}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ fontSize: 12, color: t.text2, lineHeight: 1.6, marginBottom: 10 }}>{item.comment}</div>
+
+                <div style={{ display: 'flex', gap: 14, borderTop: `1px solid ${t.separatorColor}`, paddingTop: 10 }}>
+                  <button onClick={() => toggleLike(item.id)} style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: liked[item.id] ? t.danger : t.text3, fontSize: 12, fontWeight: 600,
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24"
+                      fill={liked[item.id] ? t.danger : 'none'}
+                      stroke={liked[item.id] ? t.danger : t.text3}
+                      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                    </svg>
+                    {item.likes + (liked[item.id] ? 1 : 0)}
+                  </button>
+                  <button onClick={() => setCommentOpen(commentOpen === item.id ? null : item.id)} style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: t.text3, fontSize: 12, fontWeight: 600,
+                  }}>
+                    <Icon name="message" size={16} color={t.text3}/>
+                    {item.comments}
+                  </button>
+                </div>
+
+                {commentOpen === item.id && (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <input placeholder="コメントを追加…" style={{
+                      flex: 1, padding: '8px 12px', borderRadius: 20,
+                      background: t.inputBg, border: `1px solid ${t.border}`,
+                      color: t.text, fontSize: 12, outline: 'none',
+                      fontFamily: 'Space Grotesk, sans-serif',
+                    }}/>
+                    <button style={{
+                      width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                      background: `${t.accent}22`, border: 'none', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Icon name="send" size={14} color={t.accent}/>
+                    </button>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        )}
+        <div style={{ height: 20 }}/>
+      </div>
+    </div>
+  );
+};
+
+Object.assign(window, { SocialScreen });
+
+// ─── App Root ────────────────────────────────────────────────────────
+
+const SCREENS = {
+  home:     HomeScreen,
+  plan:     PlanScreen,
+  calendar: CalendarScreen,
+  record:   RecordScreen,
+  town:     TownScreen,
+  social:   SocialScreen,
+};
+
+const App = () => {
+  const [screen, setScreen] = useState('home');
+  const [isDark, setIsDark] = useState(true);
+  const [animating, setAnimating] = useState(false);
+  const theme = isDark ? DARK : LIGHT;
+
+  const navigate = (to) => {
+    if (to === screen) return;
+    setAnimating(true);
+    setTimeout(() => { setScreen(to); setAnimating(false); }, 160);
+  };
+
+  const Screen = SCREENS[screen];
+
+  // Body background syncs with theme
+  useEffect(() => {
+    document.body.style.background = isDark ? '#05050A' : '#C8D8EE';
+  }, [isDark]);
+
+  return (
+    <ThemeContext.Provider value={theme}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
+
+        {/* Theme toggle — outside phone frame */}
+        <div style={{
+          display: 'flex', gap: 4, padding: 4,
+          background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)',
+          borderRadius: 99,
+          border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+        }}>
+          {[
+            { label: '🌙 ナイト', value: true  },
+            { label: '☀️ デイ',   value: false },
+          ].map(opt => (
+            <button key={String(opt.value)} onClick={() => setIsDark(opt.value)} style={{
+              padding: '8px 18px', borderRadius: 99, border: 'none', cursor: 'pointer',
+              fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em',
+              transition: 'all 0.2s ease',
+              background: isDark === opt.value
+                ? (isDark ? '#C5FF47' : '#E8570A')
+                : 'transparent',
+              color: isDark === opt.value
+                ? (isDark ? '#08080F' : '#FFFFFF')
+                : (isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'),
+              boxShadow: isDark === opt.value
+                ? `0 2px 12px ${isDark ? 'rgba(197,255,71,0.4)' : 'rgba(232,87,10,0.4)'}`
+                : 'none',
+            }}>{opt.label}</button>
+          ))}
+        </div>
+
+        {/* Phone frame */}
+        <div style={{
+          width: 390, height: 844,
+          background: theme.bg,
+          borderRadius: 50, overflow: 'hidden',
+          display: 'flex', flexDirection: 'column',
+          fontFamily: "'Space Grotesk', sans-serif",
+          color: theme.text, position: 'relative',
+          boxShadow: isDark
+            ? '0 0 0 8px #111116, 0 0 0 10px #1e1e24, 0 60px 120px rgba(0,0,0,0.9), inset 0 0 0 1px rgba(255,255,255,0.05)'
+            : '0 0 0 8px #C8C0B8, 0 0 0 10px #B0A898, 0 60px 120px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.6)',
+          transition: 'background 0.35s ease, box-shadow 0.35s ease',
+        }}>
+          {/* Notch */}
+          <div style={{
+            position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
+            width: 120, height: 34, background: '#000', borderRadius: 20, zIndex: 200,
+          }}/>
+
+          <StatusBar/>
+
+          <div style={{
+            flex: 1, overflow: 'hidden', position: 'relative',
+            opacity: animating ? 0 : 1,
+            transition: 'opacity 0.15s ease',
+          }}>
+            <Screen onNavigate={navigate}/>
+          </div>
+
+          <BottomNav active={screen} onNavigate={navigate}/>
+
+          {/* Home indicator */}
+          <div style={{
+            position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+            width: 120, height: 5, borderRadius: 3,
+            background: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)',
+            zIndex: 200,
+          }}/>
+        </div>
+      </div>
+    </ThemeContext.Provider>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>
