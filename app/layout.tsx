@@ -1,3 +1,11 @@
+import type { Metadata } from 'next';
+import './globals.css';
+
+export const metadata: Metadata = {
+  title: 'RunPlan',
+  description: '東京マラソンに向けたランニング管理アプリ',
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -5,7 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body className="bg-[#08080F] text-[#EEEEF8] min-h-screen">
+        {children}
+      </body>
     </html>
   );
 }
