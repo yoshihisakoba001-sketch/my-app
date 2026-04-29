@@ -1,5 +1,9 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import BottomNav from './components/BottomNav';
 import ProgressBar from './components/ProgressBar';
+import { supabase } from './lib/supabase';
 
 const MiniTown = () => (
   <svg viewBox="0 0 340 80" style={{ width: '100%', height: 80 }}>
@@ -31,8 +35,58 @@ const MiniTown = () => (
   </svg>
 );
 
+const RACE_DATE = new Date('2027-03-01');
+const WEEKLY_GOAL = 42;
+
 export default function Home() {
-  const daysLeft = 329;
+  const [weeklyKm, setWeeklyKm] = useState(0);
+  const [totalKm, setTotalKm] = useState(0);
+  const [recentRuns, setRecentRuns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const daysLeft = Math.ceil((RACE_DATE.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 今週の開始日（月曜日）
+      const now = new Date();
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+      monday.setHours(0, 0, 0, 0);
+
+      // 今週の記録
+      const { data: weekRuns } = await supabase
+        .from('runs')
+        .select('distance')
+        .eq('user_id', user.id)
+        .gte('date', monday.toISOString().split('T')[0]);
+
+      if (weekRuns) {
+        const total = weekRuns.reduce((sum, r) => sum + (r.distance || 0), 0);
+        setWeeklyKm(Math.round(total * 10) / 10);
+      }
+
+      // 累計記録
+      const { data: allRuns } = await supabase
+        .from('runs')
+        .select('distance, date, note')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false });
+
+      if (allRuns) {
+        const total = allRuns.reduce((sum, r) => sum + (r.distance || 0), 0);
+        setTotalKm(Math.round(total * 10) / 10);
+        setRecentRuns(allRuns.slice(0, 3));
+      }
+
+      setLoading(false);
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#08080F] text-[#EEEEF8] pb-24">
@@ -67,26 +121,15 @@ export default function Home() {
 
       <div className="px-5 pt-4">
         <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A] mb-2">今週の進捗</p>
-        <ProgressBar value={28} max={42} unit="km" label="達成率" showLv={true} streak={12}
-          milestones={[{ value: 10, icon: '⭐' }, { value: 25, icon: '🏃' }, { value: 42, icon: '🏆' }]}/>
-        <div className="flex justify-between mt-3 px-1">
-          {['月','火','水','木','金','土','日'].map((d, i) => {
-            const states = ['done','done','done','today','plan','rest','plan'];
-            return (
-              <div key={d} className="flex flex-col items-center gap-1">
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs ${
-                  states[i] === 'done' ? 'bg-[#C5FF47] text-[#08080F]' :
-                  states[i] === 'today' ? 'bg-[#47B8FF]' :
-                  states[i] === 'plan' ? 'bg-white/15' : 'bg-white/5'
-                }`}>
-                  {states[i] === 'done' && '✓'}
-                  {states[i] === 'today' && <div className="w-1.5 h-1.5 rounded-full bg-white"/>}
-                </div>
-                <span className={`text-[10px] ${i === 3 ? 'text-[#47B8FF]' : 'text-[#44445A]'}`}>{d}</span>
-              </div>
-            );
-          })}
-        </div>
+        <ProgressBar
+          value={weeklyKm}
+          max={WEEKLY_GOAL}
+          unit="km"
+          label="達成率"
+          showLv={true}
+          milestones={[{ value: 10, icon: '⭐' }, { value: 25, icon: '🏃' }, { value: 42, icon: '🏆' }]}
+        />
+        {loading && <p className="text-xs text-[#44445A] text-center mt-2">読み込み中...</p>}
       </div>
 
       <div className="px-5 pt-4">
@@ -97,37 +140,39 @@ export default function Home() {
         <div className="bg-[rgba(13,13,32,0.9)] border border-white/10 rounded-2xl overflow-hidden">
           <MiniTown />
           <div className="px-4 py-2.5 flex items-center justify-between border-t border-white/10">
-            <span className="text-xs text-[#7777A0]">累計 <span className="text-[#C5FF47] font-bold">284 km</span></span>
-            <span className="text-xs px-2 py-1 rounded-full bg-[rgba(255,133,71,0.15)] text-[#FF8547] font-semibold">🏟️ スタジアムまで 16km</span>
+            <span className="text-xs text-[#7777A0]">累計 <span className="text-[#C5FF47] font-bold">{totalKm} km</span></span>
+            <span className="text-xs px-2 py-1 rounded-full bg-[rgba(255,133,71,0.15)] text-[#FF8547] font-semibold">🏟️ スタジアムまで {Math.max(0, 300 - totalKm)}km</span>
           </div>
         </div>
       </div>
 
       <div className="px-5 pt-4">
-        <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A] mb-2">グループの活動</p>
-        <div className="flex flex-col gap-3">
-          {[
-            { user: '田中', color: '#FFD700', action: '18kmのLSDランを完走！', time: '2時間前', emoji: '🔥' },
-            { user: '鈴木', color: '#47B8FF', action: 'マイタウンでスタジアムをアンロック！', time: '5時間前', emoji: '🏟️' },
-            { user: '山本', color: '#FF8547', action: '朝ラン 5km テンポ走', time: '昨日', emoji: '⚡' },
-          ].map((item, i) => (
-            <div key={i} className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-3 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold border flex-shrink-0"
-                style={{ background: `${item.color}20`, borderColor: `${item.color}55`, color: item.color }}>
-                {item.user[0]}
+        <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A] mb-2">最近の記録</p>
+        {loading ? (
+          <p className="text-xs text-[#44445A] text-center py-4">読み込み中...</p>
+        ) : recentRuns.length === 0 ? (
+          <div className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-6 text-center">
+            <p className="text-sm text-[#7777A0]">まだ記録がありません</p>
+            <a href="/record" className="text-xs text-[#C5FF47] font-semibold mt-2 inline-block">最初の記録を追加 →</a>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {recentRuns.map((run, i) => (
+              <div key={i} className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[rgba(197,255,71,0.1)] border border-[rgba(197,255,71,0.2)] flex items-center justify-center text-lg flex-shrink-0">
+                  🏃
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-[#C5FF47]">{run.distance} km</p>
+                  <p className="text-xs text-[#7777A0]">{run.note || 'メモなし'}</p>
+                </div>
+                <div className="text-[10px] text-[#44445A] flex-shrink-0">{run.date}</div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm"><span className="font-semibold" style={{ color: item.color }}>{item.user}</span> さん</p>
-                <p className="text-xs text-[#7777A0]">{item.action}</p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <div className="text-xl">{item.emoji}</div>
-                <div className="text-[10px] text-[#44445A]">{item.time}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
+
       <div className="h-4" />
       <BottomNav />
     </div>
