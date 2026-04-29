@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -9,6 +10,7 @@ type Message = {
 
 export default function AICoach() {
   const [open, setOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -23,6 +25,12 @@ export default function AICoach() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUserId(data.user.id);
+    });
+  }, []);
+
   const send = async () => {
     if (!input.trim() || loading) return;
     const userMsg: Message = { role: 'user', content: input };
@@ -35,7 +43,7 @@ export default function AICoach() {
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: newMessages, userId }),
       });
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);

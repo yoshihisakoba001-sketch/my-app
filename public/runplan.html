@@ -70,15 +70,6 @@
       0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
       40%           { transform: scale(1); opacity: 1; }
     }
-    @media (max-width: 480px) {
-      body { padding: 0 !important; align-items: stretch !important; justify-content: stretch !important; overflow: hidden; height: 100dvh; }
-      #root { width: 100%; height: 100%; }
-      .phone-wrapper { flex-direction: column; align-items: stretch; gap: 0; width: 100%; height: 100%; }
-      .theme-toggle { display: none !important; }
-      .phone-frame { width: 100% !important; height: 100% !important; border-radius: 0 !important; box-shadow: none !important; flex: 1; }
-      .phone-notch { display: none !important; }
-      .phone-indicator { display: none !important; }
-    }
   </style>
 </head>
 <body>
@@ -352,7 +343,7 @@ Object.assign(window, {
 
 // ─── Home Screen ─────────────────────────────────────────────────────
 
-const HomeScreen = ({ onNavigate, onToggleTheme, isDarkMode }) => {
+const HomeScreen = ({ onNavigate }) => {
   const t = useTheme();
 
   const feedItems = [
@@ -493,14 +484,7 @@ const HomeScreen = ({ onNavigate, onToggleTheme, isDarkMode }) => {
         borderBottom: `1px solid ${t.border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <Pill>🏆 東京マラソン 2027</Pill>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 11, color: t.text3 }}>フルマラソン</span>
-            <button onClick={onToggleTheme} style={{
-              width: 32, height: 32, borderRadius: '50%', border: 'none', cursor: 'pointer',
-              background: t.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
-            }}>{isDarkMode ? '☀️' : '🌙'}</button>
-          </div>
+          <span style={{ fontSize: 11, color: t.text3 }}>フルマラソン</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
           <span style={{ fontSize: 72, fontWeight: 700, color: t.accent, lineHeight: 1, letterSpacing: '-0.04em' }}>243</span>
@@ -2171,11 +2155,24 @@ const AICoach = ({ isDark, onClose, initialMessage }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: `あなたはRunPlanのAIランニングコーチです。
+ユーザーの目標：東京マラソン2027（フルマラソン）完走。
+現在の累計走行距離：284km。今週目標42km、達成28km。
+
+役割：
+- トレーニング計画の作成・調整
+- 記録へのフィードバック・応援・褒める
+- 天気や体調に合わせた代替メニュー提案
+- 走力向上のアドバイス
+
+口調：親しみやすく励ましを忘れずに。絵文字を適度に使う。返答は短めに（3〜5文）。`,
           messages: currentMessages.map(m => ({ role: m.role, content: m.content })),
         }),
       });
       const data = await response.json();
-      const reply = data.reply || 'すみません、もう一度試してください。';
+      const reply = data.content?.[0]?.text || 'すみません、もう一度試してください。';
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'エラーが発生しました。もう一度試してください。' }]);
@@ -2352,9 +2349,9 @@ const App = () => {
 
   return (
     <ThemeContext.Provider value={theme}>
-      <div className="phone-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
         {/* Theme toggle */}
-        <div className="theme-toggle" style={{ display: 'flex', gap: 4, padding: 4, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)', borderRadius: 99, border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)' }}>
+        <div style={{ display: 'flex', gap: 4, padding: 4, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)', borderRadius: 99, border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)' }}>
           {[{ label: '🌙 ナイト', value: true }, { label: '☀️ デイ', value: false }].map(opt => (
             <button key={String(opt.value)} onClick={() => setIsDark(opt.value)} style={{
               padding: '8px 18px', borderRadius: 99, border: 'none', cursor: 'pointer',
@@ -2367,7 +2364,7 @@ const App = () => {
         </div>
 
         {/* Phone frame */}
-        <div className="phone-frame" style={{
+        <div style={{
           width: 390, height: 844, background: theme.bg, borderRadius: 50, overflow: 'hidden',
           display: 'flex', flexDirection: 'column', fontFamily: "'Space Grotesk', sans-serif",
           color: theme.text, position: 'relative',
@@ -2376,13 +2373,13 @@ const App = () => {
             : '0 0 0 8px #C8C0B8, 0 0 0 10px #B0A898, 0 60px 120px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.6)',
           transition: 'background 0.35s ease, box-shadow 0.35s ease',
         }}>
-          <div className="phone-notch" style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 120, height: 34, background: '#000', borderRadius: 20, zIndex: 200 }}/>
+          <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 120, height: 34, background: '#000', borderRadius: 20, zIndex: 200 }}/>
           <StatusBar/>
           <div style={{ flex: 1, overflow: 'hidden', position: 'relative', opacity: animating ? 0 : 1, transition: 'opacity 0.15s ease' }}>
-            <Screen onNavigate={navigate} onOpenCoach={openCoach} onToggleTheme={() => setIsDark(d => !d)} isDarkMode={isDark}/>
+            <Screen onNavigate={navigate} onOpenCoach={openCoach}/>
           </div>
           <BottomNav active={screen} onNavigate={navigate}/>
-          <div className="phone-indicator" style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', width: 120, height: 5, borderRadius: 3, background: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)', zIndex: 200 }}/>
+          <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', width: 120, height: 5, borderRadius: 3, background: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)', zIndex: 200 }}/>
 
           {/* AI Coach floating button */}
           {!coachOpen && (
