@@ -35,16 +35,18 @@ const MiniTown = () => (
   </svg>
 );
 
-const RACE_DATE = new Date('2027-03-01');
 const WEEKLY_GOAL = 42;
 
 export default function Home() {
   const [weeklyKm, setWeeklyKm] = useState(0);
   const [totalKm, setTotalKm] = useState(0);
   const [recentRuns, setRecentRuns] = useState<any[]>([]);
+  const [race, setRace] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const daysLeft = Math.ceil((RACE_DATE.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  const daysLeft = race
+    ? Math.ceil((new Date(race.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    : null;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,6 +84,17 @@ export default function Home() {
         setRecentRuns(allRuns.slice(0, 3));
       }
 
+      // 大会データ取得
+      const { data: raceData } = await supabase
+        .from('races')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (raceData) setRace(raceData);
+
       setLoading(false);
     };
 
@@ -93,15 +106,21 @@ export default function Home() {
       <div className="px-5 pt-12 pb-5 border-b border-white/10 bg-gradient-to-b from-[rgba(197,255,71,0.055)] to-transparent">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[rgba(197,255,71,0.12)] text-[#C5FF47]">
-            🏆 東京マラソン 2027
+            🏆 {race ? race.name : '大会を設定してください'}
           </span>
-          <span className="text-xs text-[#44445A]">フルマラソン</span>
+          <span className="text-xs text-[#44445A]">{race ? race.distance : ''}</span>
         </div>
         <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-7xl font-bold text-[#C5FF47] leading-none tracking-tight">{daysLeft}</span>
+          <span className="text-7xl font-bold text-[#C5FF47] leading-none tracking-tight">
+            {daysLeft !== null ? daysLeft : '--'}
+          </span>
           <span className="text-xl text-[#7777A0] font-medium">日</span>
         </div>
-        <p className="text-sm text-[#7777A0]">2027年3月1日（日）· 東京都庁前スタート</p>
+        <p className="text-sm text-[#7777A0]">
+          {race
+            ? `${new Date(race.date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })} · 目標 ${race.goal_time}`
+            : 'AIコーチに話しかけて大会を設定しましょう'}
+        </p>
       </div>
 
       <div className="px-5 pt-4">
