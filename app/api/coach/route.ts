@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
   console.log('Full reply:', fullReply);
 
-  const raceMatch = fullReply.match(/\[RACE_DATA\](.*?)\[\/RACE_DATA\]/s);
+  const raceMatch = fullReply.match(/\[RACE_DATA\]([\s\S]*?)\[\/RACE_DATA\]/);
   console.log('raceMatch:', raceMatch ? raceMatch[1] : 'none');
 
   if (raceMatch && userId) {
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     }
   }
 
-  const planMatch = fullReply.match(/\[PLAN_DATA\](.*?)\[\/PLAN_DATA\]/s);
+  const planMatch = fullReply.match(/\[PLAN_DATA\]([\s\S]*?)\[\/PLAN_DATA\]/);
   console.log('planMatch:', planMatch ? 'found' : 'none');
 
   if (planMatch && userId) {
@@ -71,8 +71,8 @@ export async function POST(request: Request) {
   }
 
   const reply = fullReply
-    .replace(/\[RACE_DATA\].*?\[\/RACE_DATA\]/s, '')
-    .replace(/\[PLAN_DATA\].*?\[\/PLAN_DATA\]/s, '')
+    .replace(/\[RACE_DATA\][\s\S]*?\[\/RACE_DATA\]/g, '')
+    .replace(/\[PLAN_DATA\][\s\S]*?\[\/PLAN_DATA\]/g, '')
     .trim();
 
   return Response.json({ reply });
