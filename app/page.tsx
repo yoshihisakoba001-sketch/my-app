@@ -10,9 +10,6 @@ const MiniTown = () => (
       </linearGradient>
     </defs>
     <rect width="340" height="80" fill="url(#minisky)"/>
-    {[[20,6],[55,12],[110,4],[175,9],[230,3],[295,8]].map(([x,y],i) => (
-      <circle key={i} cx={x} cy={y} r={0.7} fill="#EEEEF8" opacity="0.5"/>
-    ))}
     <rect x="0" y="66" width="340" height="14" fill="#0D1A0D"/>
     <rect x="0" y="66" width="340" height="4" fill="#181828"/>
     <rect x="8" y="48" width="18" height="20" fill="#1E1E3A" rx="1"/>
@@ -21,33 +18,16 @@ const MiniTown = () => (
     <rect x="32" y="36" width="24" height="32" fill="#252540" rx="1"/>
     <rect x="36" y="41" width="5" height="5" fill="#C5FF47" opacity="0.8"/>
     <rect x="44" y="41" width="5" height="5" fill="#47B8FF" opacity="0.5"/>
-    <rect x="36" y="50" width="5" height="5" fill="#C5FF47" opacity="0.6"/>
-    <rect x="44" y="50" width="5" height="5" fill="#C5FF47" opacity="0.4"/>
     <circle cx="75" cy="60" r="6" fill="#1A4020"/>
     <circle cx="86" cy="61" r="5" fill="#183818"/>
     <rect x="98" y="44" width="20" height="24" fill="#1E1E38" rx="1"/>
     <rect x="102" y="49" width="4" height="4" fill="#C5FF47" opacity="0.9"/>
-    <rect x="109" y="49" width="4" height="4" fill="#C5FF47" opacity="0.5"/>
-    <rect x="102" y="57" width="4" height="4" fill="#47B8FF" opacity="0.4"/>
     <rect x="124" y="28" width="28" height="40" fill="#282845" rx="1"/>
     <rect x="128" y="33" width="5" height="5" fill="#C5FF47" opacity="0.9"/>
     <rect x="137" y="33" width="5" height="5" fill="#47B8FF" opacity="0.7"/>
-    <rect x="128" y="42" width="5" height="5" fill="#C5FF47" opacity="0.6"/>
-    <rect x="137" y="42" width="5" height="5" fill="#C5FF47" opacity="0.8"/>
-    <rect x="128" y="51" width="5" height="5" fill="#47B8FF" opacity="0.4"/>
-    <rect x="137" y="51" width="5" height="5" fill="#C5FF47" opacity="0.5"/>
-    <rect x="162" y="42" width="18" height="26" fill="#1C1C35" rx="1"/>
-    <rect x="166" y="47" width="4" height="4" fill="#C5FF47" opacity="0.7"/>
-    <rect x="173" y="47" width="4" height="4" fill="#47B8FF" opacity="0.5"/>
     <rect x="188" y="36" width="22" height="32" fill="#222240" rx="1"/>
     <rect x="192" y="41" width="5" height="5" fill="#C5FF47" opacity="0.8"/>
-    <rect x="200" y="41" width="5" height="5" fill="#C5FF47" opacity="0.5"/>
-    <rect x="192" y="50" width="5" height="5" fill="#47B8FF" opacity="0.6"/>
-    <rect x="200" y="50" width="5" height="5" fill="#C5FF47" opacity="0.4"/>
     <rect x="220" y="56" width="50" height="10" fill="#0A1A2A" rx="2"/>
-    <path d="M220 59 Q235 54 250 59 Q265 64 270 59" stroke="#1A3A5A" strokeWidth="1" fill="none"/>
-    <ellipse cx="305" cy="56" rx="24" ry="12" fill="none" stroke="#C5FF47" strokeWidth="0.8" opacity="0.2" strokeDasharray="3 2"/>
-    <text x="305" y="59" textAnchor="middle" fontSize="6" fill="#C5FF47" opacity="0.25" fontFamily="sans-serif">🔒 STADIUM</text>
   </svg>
 );
 
@@ -56,8 +36,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#08080F] text-[#EEEEF8] pb-24">
-
-      {/* Hero */}
       <div className="px-5 pt-12 pb-5 border-b border-white/10 bg-gradient-to-b from-[rgba(197,255,71,0.055)] to-transparent">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[rgba(197,255,71,0.12)] text-[#C5FF47]">
@@ -72,13 +50,10 @@ export default function Home() {
         <p className="text-sm text-[#7777A0]">2027年3月1日（日）· 東京都庁前スタート</p>
       </div>
 
-      {/* 今日のトレーニング */}
       <div className="px-5 pt-4">
         <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A] mb-2">今日のトレーニング</p>
         <div className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[rgba(197,255,71,0.1)] border border-[rgba(197,255,71,0.2)] flex items-center justify-center text-2xl flex-shrink-0">
-            ⚡
-          </div>
+          <div className="w-12 h-12 rounded-xl bg-[rgba(197,255,71,0.1)] border border-[rgba(197,255,71,0.2)] flex items-center justify-center text-2xl flex-shrink-0">⚡</div>
           <div className="flex-1">
             <p className="font-semibold text-[15px] mb-1">LSD — 18 km</p>
             <p className="text-xs text-[#7777A0]">ゆっくりペース 6:30/km · 約1時間57分</p>
@@ -90,22 +65,10 @@ export default function Home() {
         </div>
       </div>
 
-{/* 今週の進捗 */}
       <div className="px-5 pt-4">
         <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A] mb-2">今週の進捗</p>
-        <ProgressBar
-          value={28}
-          max={42}
-          unit="km"
-          label="達成率"
-          showLv={true}
-          streak={12}
-          milestones={[
-            { value: 10, icon: '⭐' },
-            { value: 25, icon: '🏃' },
-            { value: 42, icon: '🏆' },
-          ]}
-        />
+        <ProgressBar value={28} max={42} unit="km" label="達成率" showLv={true} streak={12}
+          milestones={[{ value: 10, icon: '⭐' }, { value: 25, icon: '🏃' }, { value: 42, icon: '🏆' }]}/>
         <div className="flex justify-between mt-3 px-1">
           {['月','火','水','木','金','土','日'].map((d, i) => {
             const states = ['done','done','done','today','plan','rest','plan'];
@@ -125,15 +88,11 @@ export default function Home() {
           })}
         </div>
       </div>
-      
 
-      {/* マイタウン */}
       <div className="px-5 pt-4">
         <div className="flex items-center justify-between mb-2">
           <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A]">マイタウン</p>
-          <a href="/town" className="text-xs text-[#C5FF47] font-semibold flex items-center gap-1">
-            全景を見る →
-          </a>
+          <a href="/town" className="text-xs text-[#C5FF47] font-semibold">全景を見る →</a>
         </div>
         <div className="bg-[rgba(13,13,32,0.9)] border border-white/10 rounded-2xl overflow-hidden">
           <MiniTown />
@@ -144,7 +103,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* グループの活動 */}
       <div className="px-5 pt-4">
         <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A] mb-2">グループの活動</p>
         <div className="flex flex-col gap-3">
@@ -170,7 +128,6 @@ export default function Home() {
           ))}
         </div>
       </div>
-
       <div className="h-4" />
       <BottomNav />
     </div>
