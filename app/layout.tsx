@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import AICoach from './components/AICoach';
 
 export const metadata: Metadata = {
   title: 'RunPlan',
@@ -15,6 +16,7 @@ export default function RootLayout({
     <html lang="ja">
       <body className="bg-[#08080F] text-[#EEEEF8] min-h-screen">
         {children}
+        <AICoach />
       </body>
     </html>
   );
