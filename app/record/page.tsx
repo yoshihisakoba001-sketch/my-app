@@ -74,7 +74,7 @@ export default function RecordPage() {
     setErrorMsg('');
     const { error } = await supabase.from('runs').insert({
       user_id: userId,
-      date: new Date().toLocaleDateString('sv-SE'),
+      date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
       distance: parseFloat(form.distance) || 0,
       duration: form.time,
       pace: form.pace,
