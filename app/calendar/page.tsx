@@ -27,8 +27,9 @@ export default function CalendarPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const monthStartStr = monthStart.toISOString().split('T')[0];
-      const monthEndStr = monthEnd.toISOString().split('T')[0];
+      const monthStartStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const monthEndStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
       // 今月の記録
       const { data: runsData } = await supabase
@@ -39,6 +40,7 @@ export default function CalendarPage() {
         .lte('date', monthEndStr);
 
       if (runsData) setRuns(runsData);
+      console.log('runsData:', runsData, 'monthStartStr:', monthStartStr, 'monthEndStr:', monthEndStr);
 
       // 今月の週別計画
       const { data: planData } = await supabase
