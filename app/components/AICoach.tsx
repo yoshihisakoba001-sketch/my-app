@@ -147,7 +147,9 @@ export default function AICoach() {
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && send()}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) send();
+                }}
                 placeholder="コーチに話しかける..."
                 className="flex-1 bg-[rgba(26,26,40,0.9)] border border-white/10 rounded-full px-4 py-2.5 text-sm outline-none text-[#EEEEF8] placeholder-[#44445A]"
               />
