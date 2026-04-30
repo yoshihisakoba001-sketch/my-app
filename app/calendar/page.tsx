@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import BottomNav from '../components/BottomNav';
 import ProgressBar from '../components/ProgressBar';
 import { supabase } from '../lib/supabase';
+import { getWeatherForecast, getUserLocation, DailyWeather } from '../lib/weather';
 
 export default function CalendarPage() {
   const [runs, setRuns] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [dailyPlans, setDailyPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [forecast, setForecast] = useState<DailyWeather[]>([]);
   const [viewDate, setViewDate] = useState(new Date());
 
   const year = viewDate.getFullYear();
@@ -21,6 +23,8 @@ export default function CalendarPage() {
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
 
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -31,7 +35,6 @@ export default function CalendarPage() {
       const lastDay = new Date(year, month + 1, 0).getDate();
       const monthEndStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
-      // 今月の記録
       const { data: runsData } = await supabase
         .from('runs')
         .select('*')
@@ -40,9 +43,7 @@ export default function CalendarPage() {
         .lte('date', monthEndStr);
 
       if (runsData) setRuns(runsData);
-      console.log('runsData:', runsData, 'monthStartStr:', monthStartStr, 'monthEndStr:', monthEndStr);
 
-      // 今月の週別計画
       const { data: planData } = await supabase
         .from('plans')
         .select('*')
@@ -54,7 +55,6 @@ export default function CalendarPage() {
       if (planData) setPlans(planData);
       else setPlans([]);
 
-      // 今月の日次計画
       const { data: dailyData } = await supabase
         .from('daily_plans')
         .select('*')
@@ -66,6 +66,15 @@ export default function CalendarPage() {
       if (dailyData) setDailyPlans(dailyData);
       else setDailyPlans([]);
 
+      // 天気予報取得（現在月のみ）
+      if (isCurrentMonth) {
+        const location = await getUserLocation();
+        if (location) {
+          const forecastData = await getWeatherForecast(location.lat, location.lon);
+          setForecast(forecastData);
+        }
+      }
+
       setLoading(false);
     };
 
@@ -76,7 +85,6 @@ export default function CalendarPage() {
   const monthlyTargetKm = plans.reduce((sum, p) => sum + (p.target_km || 0), 0) || 42;
   const pct = monthlyTargetKm > 0 ? Math.round((doneKm / monthlyTargetKm) * 100) : 0;
 
-  // 日付ごとのマップ
   const runMap: Record<number, any> = {};
   runs.forEach(r => {
     const day = new Date(r.date).getDate();
@@ -95,11 +103,15 @@ export default function CalendarPage() {
     dailyPlanMap[day] = p;
   });
 
+  // 天気予報マップ（日付文字列 → 天気）
+  const forecastMap: Record<string, DailyWeather> = {};
+  forecast.forEach(f => {
+    forecastMap[f.date] = f;
+  });
+
   const firstDayOffset = (monthStart.getDay() + 6) % 7;
   const daysInMonth = monthEnd.getDate();
-  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
   const monthName = viewDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' });
-
   const hasDailyPlans = dailyPlans.length > 0;
 
   return (
@@ -160,10 +172,13 @@ export default function CalendarPage() {
             const run = runMap[day];
             const plan = planMap[day];
             const dailyPlan = dailyPlanMap[day];
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const weatherDay = forecastMap[dateStr];
             const isToday = isCurrentMonth && day === today.getDate();
+            const isFuture = day > today.getDate() || !isCurrentMonth;
 
             return (
-              <div key={day} className={`rounded-xl p-1 flex flex-col items-center gap-0.5 min-h-[52px] border ${
+              <div key={day} className={`rounded-xl p-1 flex flex-col items-center gap-0.5 min-h-[56px] border ${
                 isToday ? 'border-[#47B8FF] bg-[rgba(71,184,255,0.1)]' :
                 run ? 'border-[rgba(197,255,71,0.2)] bg-[rgba(197,255,71,0.05)]' :
                 dailyPlan && dailyPlan.type !== 'レスト' ? 'border-[rgba(197,255,71,0.15)] bg-[rgba(197,255,71,0.03)]' :
@@ -184,6 +199,9 @@ export default function CalendarPage() {
                 )}
                 {!run && !dailyPlan && plan && (
                   <span className="text-[8px] text-[#FF8547]">週始</span>
+                )}
+                {weatherDay && isFuture && (
+                  <span className="text-[10px] leading-none">{weatherDay.emoji}</span>
                 )}
               </div>
             );
@@ -206,24 +224,31 @@ export default function CalendarPage() {
           <p className="text-xs text-[#44445A] text-center py-4">読み込み中...</p>
         ) : hasDailyPlans ? (
           <div className="flex flex-col gap-2">
-            {dailyPlans.map((plan, i) => (
-              <div key={i} className={`border rounded-xl p-3 flex items-center gap-3 ${
-                plan.done
-                  ? 'bg-[rgba(197,255,71,0.05)] border-[rgba(197,255,71,0.2)]'
-                  : 'bg-[rgba(26,26,40,0.85)] border-white/10'
-              }`}>
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${
-                  plan.type === 'レスト' ? 'bg-white/5' : 'bg-[rgba(197,255,71,0.1)]'
+            {dailyPlans.map((plan, i) => {
+              const weatherDay = forecastMap[plan.date];
+              return (
+                <div key={i} className={`border rounded-xl p-3 flex items-center gap-3 ${
+                  plan.done
+                    ? 'bg-[rgba(197,255,71,0.05)] border-[rgba(197,255,71,0.2)]'
+                    : 'bg-[rgba(26,26,40,0.85)] border-white/10'
                 }`}>
-                  {plan.type === 'レスト' ? '😴' : plan.type === 'ロング走' ? '🏃' : plan.type === 'テンポ走' ? '⚡' : '🏃'}
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${
+                    plan.type === 'レスト' ? 'bg-white/5' : 'bg-[rgba(197,255,71,0.1)]'
+                  }`}>
+                    {plan.type === 'レスト' ? '😴' : plan.type === 'ロング走' ? '🏃' : plan.type === 'テンポ走' ? '⚡' : '🏃'}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold">{plan.type}{plan.km ? ` ${plan.km}km` : ''}</p>
+                    <p className="text-xs text-[#7777A0]">{plan.date} {plan.note && `· ${plan.note}`}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                    {weatherDay && <span className="text-base">{weatherDay.emoji}</span>}
+                    {weatherDay && <span className="text-[10px] text-[#7777A0]">{weatherDay.maxTemp}°C</span>}
+                    {plan.done && <span className="text-[#C5FF47] text-lg">✓</span>}
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold">{plan.type}{plan.km ? ` ${plan.km}km` : ''}</p>
-                  <p className="text-xs text-[#7777A0]">{plan.date} {plan.note && `· ${plan.note}`}</p>
-                </div>
-                {plan.done && <span className="text-[#C5FF47] text-lg">✓</span>}
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : plans.length === 0 ? (
           <div className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-4 text-center">

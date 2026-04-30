@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import BottomNav from './components/BottomNav';
 import ProgressBar from './components/ProgressBar';
 import { supabase } from './lib/supabase';
+import { getWeather, getUserLocation, WeatherData } from './lib/weather';
 
 const MiniTown = () => (
   <svg viewBox="0 0 340 80" style={{ width: '100%', height: 80 }}>
@@ -43,6 +44,7 @@ export default function Home() {
   const [recentRuns, setRecentRuns] = useState<any[]>([]);
   const [race, setRace] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
 
   const daysLeft = race
     ? Math.ceil((new Date(race.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
@@ -95,6 +97,14 @@ export default function Home() {
 
       if (raceData) setRace(raceData);
 
+      // 天気取得
+      const location = await getUserLocation();
+      if (location) {
+        const weatherData = await getWeather(location.lat, location.lon);
+        if (weatherData) setWeather(weatherData);
+      }
+
+
       setLoading(false);
     };
 
@@ -132,8 +142,8 @@ export default function Home() {
             <p className="text-xs text-[#7777A0]">ゆっくりペース 6:30/km · 約1時間57分</p>
           </div>
           <div className="text-right flex-shrink-0">
-            <div className="text-2xl">☁️</div>
-            <div className="text-xs text-[#7777A0]">14°C</div>
+            <div className="text-2xl">{weather ? weather.emoji : '🌡️'}</div>
+            <div className="text-xs text-[#7777A0]">{weather ? `${weather.temp}°C` : '--°C'}</div>
           </div>
         </div>
       </div>
