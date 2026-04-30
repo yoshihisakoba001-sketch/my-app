@@ -38,17 +38,31 @@ const MiniTown = () => (
 
 const WEEKLY_GOAL = 42;
 
+const getTrainingIcon = (type: string) => {
+  if (type === 'ロング走') return '🏃';
+  if (type === 'テンポ走') return '⚡';
+  if (type === '筋トレ') return '💪';
+  if (type === 'レスト') return '😴';
+  return '🏃';
+};
+
 export default function Home() {
   const [weeklyKm, setWeeklyKm] = useState(0);
   const [totalKm, setTotalKm] = useState(0);
   const [recentRuns, setRecentRuns] = useState<any[]>([]);
   const [race, setRace] = useState<any>(null);
+  const [todayPlan, setTodayPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<WeatherData | null>(null);
 
   const daysLeft = race
     ? Math.ceil((new Date(race.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : null;
+
+  const todayStr = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  })();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,13 +74,14 @@ export default function Home() {
       const monday = new Date(now);
       monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
       monday.setHours(0, 0, 0, 0);
+      const mondayStr = `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
 
       // 今週の記録
       const { data: weekRuns } = await supabase
         .from('runs')
         .select('distance')
         .eq('user_id', user.id)
-        .gte('date', monday.toISOString().split('T')[0]);
+        .gte('date', mondayStr);
 
       if (weekRuns) {
         const total = weekRuns.reduce((sum, r) => sum + (r.distance || 0), 0);
@@ -97,13 +112,22 @@ export default function Home() {
 
       if (raceData) setRace(raceData);
 
+      // 今日の日次計画を取得
+      const { data: todayPlanData } = await supabase
+        .from('daily_plans')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', todayStr)
+        .maybeSingle();
+
+      if (todayPlanData) setTodayPlan(todayPlanData);
+
       // 天気取得
       const location = await getUserLocation();
       if (location) {
         const weatherData = await getWeather(location.lat, location.lon);
         if (weatherData) setWeather(weatherData);
       }
-
 
       setLoading(false);
     };
@@ -135,17 +159,35 @@ export default function Home() {
 
       <div className="px-5 pt-4">
         <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A] mb-2">今日のトレーニング</p>
-        <div className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[rgba(197,255,71,0.1)] border border-[rgba(197,255,71,0.2)] flex items-center justify-center text-2xl flex-shrink-0">⚡</div>
-          <div className="flex-1">
-            <p className="font-semibold text-[15px] mb-1">LSD — 18 km</p>
-            <p className="text-xs text-[#7777A0]">ゆっくりペース 6:30/km · 約1時間57分</p>
+        {todayPlan ? (
+          <div className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-4 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[rgba(197,255,71,0.1)] border border-[rgba(197,255,71,0.2)] flex items-center justify-center text-2xl flex-shrink-0">
+              {getTrainingIcon(todayPlan.type)}
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-[15px] mb-1">
+                {todayPlan.type}{todayPlan.km ? ` — ${todayPlan.km} km` : ''}
+              </p>
+              <p className="text-xs text-[#7777A0]">{todayPlan.note || ''}</p>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <div className="text-2xl">{weather ? weather.emoji : '🌡️'}</div>
+              <div className="text-xs text-[#7777A0]">{weather ? `${weather.temp}°C` : '--°C'}</div>
+            </div>
           </div>
-          <div className="text-right flex-shrink-0">
-            <div className="text-2xl">{weather ? weather.emoji : '🌡️'}</div>
-            <div className="text-xs text-[#7777A0]">{weather ? `${weather.temp}°C` : '--°C'}</div>
+        ) : (
+          <div className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-4 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[rgba(197,255,71,0.1)] border border-[rgba(197,255,71,0.2)] flex items-center justify-center text-2xl flex-shrink-0">⚡</div>
+            <div className="flex-1">
+              <p className="font-semibold text-[15px] mb-1 text-[#7777A0]">今日の計画はありません</p>
+              <p className="text-xs text-[#44445A]">AIコーチで日次計画を作りましょう</p>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <div className="text-2xl">{weather ? weather.emoji : '🌡️'}</div>
+              <div className="text-xs text-[#7777A0]">{weather ? `${weather.temp}°C` : '--°C'}</div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="px-5 pt-4">
