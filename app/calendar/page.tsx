@@ -1,37 +1,104 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import BottomNav from '../components/BottomNav';
 import ProgressBar from '../components/ProgressBar';
-
-const calendarData = [
-  { date: 1,  plan: 'rest' },
-  { date: 2,  plan: 'run',  km: 10, done: true },
-  { date: 3,  plan: 'run',  km: 16, done: true },
-  { date: 4,  plan: 'rest' },
-  { date: 5,  plan: 'run',  km: 8,  done: true },
-  { date: 6,  plan: 'run',  km: 12, done: false },
-  { date: 7,  plan: 'run',  km: 20, done: false },
-  { date: 8,  plan: 'rest' },
-  { date: 9,  plan: 'run',  km: 10, done: false },
-  { date: 10, plan: 'run',  km: 16, done: false },
-  { date: 11, plan: 'rest' },
-  { date: 12, plan: 'run',  km: 8,  done: false },
-  { date: 13, plan: 'run',  km: 12, done: false },
-  { date: 14, plan: 'run',  km: 22, done: false },
-];
-
-const weatherMap: Record<number, string> = {
-  6: '🌧️', 7: '🌧️', 9: '⛅', 10: '☀️', 11: '☀️', 12: '☀️', 13: '🌤️', 14: '☀️',
-};
-
-const upcoming = [
-  { date: '4/29（火）', type: 'ロング走', km: 20, weather: '🌧️', alt: '室内筋トレに変更推奨' },
-  { date: '4/30（水）', type: 'レスト',   km: null, weather: '🌧️', alt: null },
-  { date: '5/1（木）',  type: 'テンポ走', km: 10, weather: '☀️', alt: null },
-];
+import { supabase } from '../lib/supabase';
 
 export default function CalendarPage() {
-  const plannedKm = 168;
-  const doneKm = 28;
-  const pct = Math.round((doneKm / plannedKm) * 100);
+  const [runs, setRuns] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [dailyPlans, setDailyPlans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewDate, setViewDate] = useState(new Date());
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const monthStart = new Date(year, month, 1);
+  const monthEnd = new Date(year, month + 1, 0);
+  const today = new Date();
+
+  const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const monthStartStr = monthStart.toISOString().split('T')[0];
+      const monthEndStr = monthEnd.toISOString().split('T')[0];
+
+      // 今月の記録
+      const { data: runsData } = await supabase
+        .from('runs')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', monthStartStr)
+        .lte('date', monthEndStr);
+
+      if (runsData) setRuns(runsData);
+
+      // 今月の週別計画
+      const { data: planData } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('week_start', monthStartStr)
+        .lte('week_start', monthEndStr)
+        .order('week_start', { ascending: true });
+
+      if (planData) setPlans(planData);
+      else setPlans([]);
+
+      // 今月の日次計画
+      const { data: dailyData } = await supabase
+        .from('daily_plans')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', monthStartStr)
+        .lte('date', monthEndStr)
+        .order('date', { ascending: true });
+
+      if (dailyData) setDailyPlans(dailyData);
+      else setDailyPlans([]);
+
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [viewDate]);
+
+  const doneKm = runs.reduce((sum, r) => sum + (r.distance || 0), 0);
+  const monthlyTargetKm = plans.reduce((sum, p) => sum + (p.target_km || 0), 0) || 42;
+  const pct = monthlyTargetKm > 0 ? Math.round((doneKm / monthlyTargetKm) * 100) : 0;
+
+  // 日付ごとのマップ
+  const runMap: Record<number, any> = {};
+  runs.forEach(r => {
+    const day = new Date(r.date).getDate();
+    runMap[day] = r;
+  });
+
+  const planMap: Record<number, any> = {};
+  plans.forEach(p => {
+    const day = new Date(p.week_start).getDate();
+    planMap[day] = p;
+  });
+
+  const dailyPlanMap: Record<number, any> = {};
+  dailyPlans.forEach(p => {
+    const day = new Date(p.date).getDate();
+    dailyPlanMap[day] = p;
+  });
+
+  const firstDayOffset = (monthStart.getDay() + 6) % 7;
+  const daysInMonth = monthEnd.getDate();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  const monthName = viewDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' });
+
+  const hasDailyPlans = dailyPlans.length > 0;
 
   return (
     <div className="min-h-screen bg-[#08080F] text-[#EEEEF8] pb-24">
@@ -39,14 +106,18 @@ export default function CalendarPage() {
       {/* Header */}
       <div className="px-5 pt-12 pb-4 border-b border-white/10">
         <h1 className="text-xl font-bold tracking-tight">カレンダー</h1>
-        <p className="text-xs text-[#7777A0] mt-1">2026年4月</p>
+        <div className="flex items-center justify-between mt-2">
+          <button onClick={prevMonth} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm">←</button>
+          <p className="text-sm font-semibold text-[#EEEEF8]">{monthName}</p>
+          <button onClick={nextMonth} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm">→</button>
+        </div>
       </div>
 
       {/* Monthly stats */}
       <div className="px-5 pt-4 grid grid-cols-3 gap-3">
         {[
-          { label: '月間目標', value: `${plannedKm}km` },
-          { label: '達成済み', value: `${doneKm}km` },
+          { label: '月間目標', value: `${monthlyTargetKm}km` },
+          { label: '達成済み', value: `${Math.round(doneKm * 10) / 10}km` },
           { label: '達成率',   value: `${pct}%` },
         ].map((stat, i) => (
           <div key={i} className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-xl p-3 text-center">
@@ -59,97 +130,145 @@ export default function CalendarPage() {
       {/* Monthly progress bar */}
       <div className="px-5 pt-3">
         <ProgressBar
-          value={doneKm}
-          max={plannedKm}
+          value={Math.round(doneKm * 10) / 10}
+          max={monthlyTargetKm}
           unit="km"
           label="月間達成率"
           showLv={true}
-          streak={12}
           milestones={[
-            { value: 42,  icon: '⭐' },
-            { value: 84,  icon: '🏃' },
-            { value: 126, icon: '🌟' },
-            { value: 168, icon: '🏆' },
+            { value: Math.round(monthlyTargetKm * 0.25), icon: '⭐' },
+            { value: Math.round(monthlyTargetKm * 0.5),  icon: '🏃' },
+            { value: Math.round(monthlyTargetKm * 0.75), icon: '🌟' },
+            { value: monthlyTargetKm, icon: '🏆' },
           ]}
         />
       </div>
-      
 
-      {/* Day headers */}
+      {/* Calendar grid */}
       <div className="px-5 pt-4">
         <div className="grid grid-cols-7 mb-2">
           {['月','火','水','木','金','土','日'].map(d => (
             <div key={d} className="text-center text-[10px] text-[#44445A] font-semibold">{d}</div>
           ))}
         </div>
-
-        {/* Calendar grid */}
         <div className="grid grid-cols-7 gap-1">
-          {[...Array(2)].map((_, i) => <div key={`empty-${i}`} />)}
-          {calendarData.map((day) => {
-            const weather = weatherMap[day.date];
-            const isToday = day.date === 28;
+          {[...Array(firstDayOffset)].map((_, i) => <div key={`empty-${i}`} />)}
+          {[...Array(daysInMonth)].map((_, i) => {
+            const day = i + 1;
+            const run = runMap[day];
+            const plan = planMap[day];
+            const dailyPlan = dailyPlanMap[day];
+            const isToday = isCurrentMonth && day === today.getDate();
+
             return (
-              <div key={day.date} className={`rounded-xl p-1 flex flex-col items-center gap-0.5 min-h-[52px] border ${
+              <div key={day} className={`rounded-xl p-1 flex flex-col items-center gap-0.5 min-h-[52px] border ${
                 isToday ? 'border-[#47B8FF] bg-[rgba(71,184,255,0.1)]' :
-                day.done ? 'border-[rgba(197,255,71,0.2)] bg-[rgba(197,255,71,0.05)]' :
-                day.plan === 'run' ? 'border-white/10 bg-[rgba(26,26,40,0.6)]' :
+                run ? 'border-[rgba(197,255,71,0.2)] bg-[rgba(197,255,71,0.05)]' :
+                dailyPlan && dailyPlan.type !== 'レスト' ? 'border-[rgba(197,255,71,0.15)] bg-[rgba(197,255,71,0.03)]' :
+                plan ? 'border-[rgba(255,133,71,0.2)] bg-[rgba(255,133,71,0.03)]' :
                 'border-transparent bg-transparent'
               }`}>
                 <span className={`text-[11px] font-semibold ${
                   isToday ? 'text-[#47B8FF]' :
-                  day.done ? 'text-[#C5FF47]' : 'text-[#EEEEF8]'
-                }`}>{day.date}</span>
-                {day.plan === 'run' && (
-                  <span className="text-[9px] text-[#7777A0]">{day.km}km</span>
+                  run ? 'text-[#C5FF47]' : 'text-[#EEEEF8]'
+                }`}>{day}</span>
+                {run && <span className="text-[9px] text-[#7777A0]">{run.distance}km</span>}
+                {run && <span className="text-[#C5FF47] text-[10px]">✓</span>}
+                {!run && dailyPlan && dailyPlan.type !== 'レスト' && (
+                  <span className="text-[8px] text-[#C5FF47] text-center leading-tight">{dailyPlan.km}km</span>
                 )}
-                {weather && <span className="text-[10px]">{weather}</span>}
-                {day.done && <span className="text-[#C5FF47] text-[10px]">✓</span>}
+                {!run && dailyPlan && dailyPlan.type === 'レスト' && (
+                  <span className="text-[8px] text-[#44445A]">rest</span>
+                )}
+                {!run && !dailyPlan && plan && (
+                  <span className="text-[8px] text-[#FF8547]">週始</span>
+                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Today's training */}
+      {/* 日次計画または週別計画 */}
       <div className="px-5 pt-5">
-        <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A] mb-2">今日のトレーニング</p>
-        <div className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[rgba(197,255,71,0.1)] border border-[rgba(197,255,71,0.2)] flex items-center justify-center text-2xl flex-shrink-0">
-            ⚡
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-[15px] mb-1">LSD — 18 km</p>
-            <p className="text-xs text-[#7777A0]">ゆっくりペース 6:30/km · 約1時間57分</p>
-            <div className="mt-2 bg-white/10 rounded-full h-1.5 overflow-hidden">
-              <div className="bg-[#C5FF47] h-1.5 rounded-full" style={{ width: '0%' }}/>
-            </div>
-            <p className="text-[10px] text-[#44445A] mt-1">0 / 18 km 完了</p>
-          </div>
-          <div className="text-right flex-shrink-0">
-            <div className="text-2xl">☁️</div>
-            <div className="text-xs text-[#7777A0]">14°C</div>
-          </div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A]">
+            {hasDailyPlans ? '日次計画' : '週別計画'}
+          </p>
+          {!hasDailyPlans && (
+            <span className="text-[10px] text-[#FF8547]">AIコーチで日次計画を作れます</span>
+          )}
         </div>
+
+        {loading ? (
+          <p className="text-xs text-[#44445A] text-center py-4">読み込み中...</p>
+        ) : hasDailyPlans ? (
+          <div className="flex flex-col gap-2">
+            {dailyPlans.map((plan, i) => (
+              <div key={i} className={`border rounded-xl p-3 flex items-center gap-3 ${
+                plan.done
+                  ? 'bg-[rgba(197,255,71,0.05)] border-[rgba(197,255,71,0.2)]'
+                  : 'bg-[rgba(26,26,40,0.85)] border-white/10'
+              }`}>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${
+                  plan.type === 'レスト' ? 'bg-white/5' : 'bg-[rgba(197,255,71,0.1)]'
+                }`}>
+                  {plan.type === 'レスト' ? '😴' : plan.type === 'ロング走' ? '🏃' : plan.type === 'テンポ走' ? '⚡' : '🏃'}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">{plan.type}{plan.km ? ` ${plan.km}km` : ''}</p>
+                  <p className="text-xs text-[#7777A0]">{plan.date} {plan.note && `· ${plan.note}`}</p>
+                </div>
+                {plan.done && <span className="text-[#C5FF47] text-lg">✓</span>}
+              </div>
+            ))}
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-4 text-center">
+            <p className="text-sm text-[#7777A0]">この月の計画はありません</p>
+            <p className="text-xs text-[#44445A] mt-1">AIコーチに話しかけて計画を作りましょう</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {plans.map((plan, i) => (
+              <div key={i} className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-xl p-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[rgba(255,133,71,0.1)] border border-[rgba(255,133,71,0.2)] flex items-center justify-center text-xs font-bold text-[#FF8547] flex-shrink-0">
+                  W{i + 1}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-[#FF8547]">{plan.phase}</p>
+                  <p className="text-xs text-[#7777A0]">{plan.week_start}〜 · ロング走 {plan.long_run_km}km</p>
+                </div>
+                <span className="text-sm font-bold text-[#C5FF47]">{plan.target_km}km</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Upcoming */}
+      {/* 今月の記録 */}
       <div className="px-5 pt-5">
-        <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A] mb-3">今後の予定</p>
-        <div className="flex flex-col gap-2">
-          {upcoming.map((item, i) => (
-            <div key={i} className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-xl p-3 flex items-center gap-3">
-              <div className="text-2xl">{item.weather}</div>
-              <div className="flex-1">
-                <p className="text-xs text-[#7777A0]">{item.date}</p>
-                <p className="text-sm font-semibold">{item.type}{item.km ? ` ${item.km}km` : ''}</p>
-                {item.alt && (
-                  <p className="text-xs text-[#FF8547] mt-0.5">⚠️ {item.alt}</p>
-                )}
+        <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A] mb-3">今月の記録</p>
+        {loading ? (
+          <p className="text-xs text-[#44445A] text-center py-4">読み込み中...</p>
+        ) : runs.length === 0 ? (
+          <div className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-4 text-center">
+            <p className="text-sm text-[#7777A0]">この月の記録はまだありません</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {runs.map((run, i) => (
+              <div key={i} className="bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-xl p-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[rgba(197,255,71,0.1)] flex items-center justify-center text-lg flex-shrink-0">🏃</div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-[#C5FF47]">{run.distance}km</p>
+                  <p className="text-xs text-[#7777A0]">{run.note || 'メモなし'}</p>
+                </div>
+                <div className="text-[10px] text-[#44445A]">{run.date}</div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="h-4"/>

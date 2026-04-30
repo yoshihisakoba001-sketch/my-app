@@ -46,7 +46,12 @@ export default function AICoach() {
         body: JSON.stringify({ messages: newMessages, userId }),
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      const cleanReply = (data.reply || '')
+        .replace(/\[RACE_DATA\][\s\S]*?\[\/RACE_DATA\]/g, '')
+        .replace(/\[PLAN_DATA\][\s\S]*?\[\/PLAN_DATA\]/g, '')
+        .replace(/\[DAILY_PLAN_DATA\][\s\S]*?\[\/DAILY_PLAN_DATA\]/g, '')
+        .trim();
+      setMessages(prev => [...prev, { role: 'assistant', content: cleanReply }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'エラーが発生しました。もう一度試してください。' }]);
     } finally {

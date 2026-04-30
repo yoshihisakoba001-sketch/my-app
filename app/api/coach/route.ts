@@ -11,28 +11,60 @@ const supabase = createClient(
 export async function POST(request: Request) {
   const { messages, userId } = await request.json();
 
-  console.log('userId received:', userId);
+  let contextData = '';
+  if (userId) {
+    const { data: races } = await supabase
+      .from('races')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: true })
+      .limit(1);
+
+    const { data: plans } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('user_id', userId)
+      .order('week_start', { ascending: true });
+
+    const { data: runs } = await supabase
+      .from('runs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(5);
+
+    const today = new Date().toISOString().split('T')[0];
+    const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const { data: dailyPlans } = await supabase
+      .from('daily_plans')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', today)
+      .lte('date', future)
+      .order('date', { ascending: true });
+
+    if (races && races.length > 0) {
+      contextData += '\n【目標大会】' + races[0].name + ' (' + races[0].date + ') 目標: ' + races[0].goal_time;
+    }
+    if (plans && plans.length > 0) {
+      contextData += '\n【週別計画】' + plans.map(p => p.week_start + ': ' + p.phase + ' ' + p.target_km + 'km').join(', ');
+    }
+    if (runs && runs.length > 0) {
+      contextData += '\n【最近の記録】' + runs.map(r => r.date + ': ' + r.distance + 'km').join(', ');
+    }
+    if (dailyPlans && dailyPlans.length > 0) {
+      contextData += '\n【今後の日次計画】' + dailyPlans.map(p => p.date + ': ' + p.type + (p.km ? ' ' + p.km + 'km' : '')).join(', ');
+    }
+  }
+
+  const systemPrompt = 'あなたはRunPlanのAIランニングコーチです。\n\n役割：\n- ユーザーと会話しながらトレーニング計画を作成・調整\n- 記録へのフィードバック・応援・褒める\n- 天気や体調に合わせた代替メニュー提案\n- 走力向上のアドバイス\n\n' +
+    (contextData ? '【ユーザーの現在の状況】' + contextData + '\n\n' : '') +
+    '重要：データを保存する場合は必ず以下のJSON形式を返答の最後に含めること。開始タグと終了タグは必ずセットで使うこと。\n\n大会を設定した場合：\n[RACE_DATA]{"name":"大会名","date":"YYYY-MM-DD","distance":"フルマラソン","goal_time":"目標タイム"}[/RACE_DATA]\n\n週別計画を作成した場合：\n[PLAN_DATA][{"week_start":"YYYY-MM-DD","target_km":数値,"phase":"フェーズ名","long_run_km":数値}][/PLAN_DATA]\n\n日次計画を作成した場合：\n[DAILY_PLAN_DATA][{"date":"YYYY-MM-DD","type":"ジョグ/ロング走/テンポ走/レスト/筋トレ","km":数値,"note":"メモ"}][/DAILY_PLAN_DATA]\n\n口調：親しみやすく励ましを忘れずに。絵文字を適度に使う。';
 
   const response = await client.messages.create({
     model: 'claude-opus-4-6',
-    max_tokens: 2000,
-    system: `あなたはRunPlanのAIランニングコーチです。
-
-役割：
-- ユーザーと会話しながらトレーニング計画を作成
-- 記録へのフィードバック・応援・褒める
-- 天気や体調に合わせた代替メニュー提案
-- 走力向上のアドバイス
-
-大会設定や計画を作成した場合、返答の最後に必ず以下のJSON形式でデータを含めてください：
-
-大会を設定した場合：
-[RACE_DATA]{"name":"大会名","date":"YYYY-MM-DD","distance":"フルマラソン","goal_time":"目標タイム"}[/RACE_DATA]
-
-週別計画を作成した場合：
-[PLAN_DATA][{"week_start":"YYYY-MM-DD","target_km":数値,"phase":"フェーズ名","long_run_km":数値}][/PLAN_DATA]
-
-口調：親しみやすく励ましを忘れずに。絵文字を適度に使う。返答は短めに（3〜5文）。`,
+    max_tokens: 4000,
+    system: systemPrompt,
     messages: messages.map((m: { role: string; content: string }) => ({
       role: m.role,
       content: m.content,
@@ -41,38 +73,52 @@ export async function POST(request: Request) {
 
   const fullReply = response.content[0].type === 'text' ? response.content[0].text : '';
 
-  console.log('Full reply:', fullReply);
+  console.log('fullReply length:', fullReply.length);
+  console.log('userId:', userId);
 
   const raceMatch = fullReply.match(/\[RACE_DATA\]([\s\S]*?)\[\/RACE_DATA\]/);
-  console.log('raceMatch:', raceMatch ? raceMatch[1] : 'none');
-
   if (raceMatch && userId) {
     try {
       const raceData = JSON.parse(raceMatch[1]);
-      const { error } = await supabase.from('races').upsert({ user_id: userId, ...raceData });
-      console.log('Race save error:', error);
+      await supabase.from('races').upsert({ user_id: userId, ...raceData });
+      console.log('Race saved');
     } catch (e) {
-      console.error('Race data parse error:', e);
+      console.error('Race error:', e);
     }
   }
 
   const planMatch = fullReply.match(/\[PLAN_DATA\]([\s\S]*?)\[\/PLAN_DATA\]/);
-  console.log('planMatch:', planMatch ? 'found' : 'none');
-
   if (planMatch && userId) {
     try {
       const planData = JSON.parse(planMatch[1]);
       const plansWithUserId = planData.map((p: any) => ({ ...p, user_id: userId }));
-      const { error } = await supabase.from('plans').upsert(plansWithUserId);
-      console.log('Plan save error:', error);
+      await supabase.from('plans').upsert(plansWithUserId);
+      console.log('Plans saved');
     } catch (e) {
-      console.error('Plan data parse error:', e);
+      console.error('Plan error:', e);
     }
   }
 
+  const dailyPlanMatch = fullReply.match(/\[DAILY_PLAN_DATA\]([\s\S]*?)\[\/DAILY_PLAN_DATA\]/);
+  console.log('dailyPlanMatch found:', !!dailyPlanMatch);
+  if (dailyPlanMatch && userId) {
+    try {
+      const dailyPlanData = JSON.parse(dailyPlanMatch[1]);
+      const dailyPlansWithUserId = dailyPlanData.map((p: any) => ({ ...p, user_id: userId }));
+      const dates = dailyPlansWithUserId.map((p: any) => p.date);
+      await supabase.from('daily_plans').delete().eq('user_id', userId).in('date', dates);
+      const { error } = await supabase.from('daily_plans').insert(dailyPlansWithUserId);
+      console.log('Daily plans saved, error:', error);
+    } catch (e) {
+      console.error('Daily plan error:', e);
+    }
+  }
+
+  // タグを除去（終了タグがない場合も対応）
   const reply = fullReply
-    .replace(/\[RACE_DATA\][\s\S]*?\[\/RACE_DATA\]/g, '')
-    .replace(/\[PLAN_DATA\][\s\S]*?\[\/PLAN_DATA\]/g, '')
+    .replace(/\[RACE_DATA\][\s\S]*?(\[\/RACE_DATA\]|$)/g, '')
+    .replace(/\[PLAN_DATA\][\s\S]*?(\[\/PLAN_DATA\]|$)/g, '')
+    .replace(/\[DAILY_PLAN_DATA\][\s\S]*?(\[\/DAILY_PLAN_DATA\]|$)/g, '')
     .trim();
 
   return Response.json({ reply });
