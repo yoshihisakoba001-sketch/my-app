@@ -1,21 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BottomNav from '../components/BottomNav';
 import ProgressBar from '../components/ProgressBar';
+import { supabase } from '../lib/supabase';
 
-const myTownKm = 284;
-const nextUnlock = { name: 'スタジアム', km: 300, remaining: 16 };
-
-const buildings = [
-  { name: '公園',       unlockedAt: 100, icon: '🌳', unlocked: true },
-  { name: '橋',         unlockedAt: 150, icon: '🌉', unlocked: true },
-  { name: 'カフェ',     unlockedAt: 200, icon: '☕', unlocked: true },
-  { name: '川・森',     unlockedAt: 250, icon: '🌊', unlocked: true },
-  { name: 'スタジアム', unlockedAt: 300, icon: '🏟️', unlocked: false },
-  { name: '図書館',     unlockedAt: 400, icon: '📚', unlocked: false },
-  { name: '温泉',       unlockedAt: 500, icon: '♨️',  unlocked: false },
-  { name: '城',         unlockedAt: 750, icon: '🏯', unlocked: false },
+const BUILDINGS = [
+  { name: '公園',       unlockedAt: 100, icon: '🌳' },
+  { name: '橋',         unlockedAt: 150, icon: '🌉' },
+  { name: 'カフェ',     unlockedAt: 200, icon: '☕' },
+  { name: '川・森',     unlockedAt: 250, icon: '🌊' },
+  { name: 'スタジアム', unlockedAt: 300, icon: '🏟️' },
+  { name: '図書館',     unlockedAt: 400, icon: '📚' },
+  { name: '温泉',       unlockedAt: 500, icon: '♨️' },
+  { name: '城',         unlockedAt: 750, icon: '🏯' },
 ];
 
 const groupMembers = [
@@ -121,6 +119,32 @@ const NightTown = ({ km }: { km: number }) => (
 
 export default function TownPage() {
   const [viewTab, setViewTab] = useState<'my' | 'group'>('my');
+  const [totalKm, setTotalKm] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: runs } = await supabase
+        .from('runs')
+        .select('distance')
+        .eq('user_id', user.id);
+
+      if (runs) {
+        const total = runs.reduce((sum, r) => sum + (r.distance || 0), 0);
+        setTotalKm(Math.round(total * 10) / 10);
+      }
+
+      setLoading(false);
+    };
+
+    fetchData();
+  }, []);
+
+  const nextUnlock = BUILDINGS.find(b => b.unlockedAt > totalKm);
+  const buildings = BUILDINGS.map(b => ({ ...b, unlocked: totalKm >= b.unlockedAt }));
 
   return (
     <div className="min-h-screen bg-[#08080F] text-[#EEEEF8] pb-24">
@@ -153,20 +177,22 @@ export default function TownPage() {
         <>
           <div className="mx-5 mt-4 rounded-2xl overflow-hidden border border-white/10 bg-[#0D0D20]">
             <div style={{ height: 200 }}>
-              <NightTown km={myTownKm}/>
+              <NightTown km={totalKm}/>
             </div>
             <div className="px-4 py-3 flex items-center justify-between border-t border-white/10">
               <div className="text-sm">
-                累計 <span className="text-[#C5FF47] font-bold">{myTownKm} km</span>
+                累計 <span className="text-[#C5FF47] font-bold">{loading ? '...' : totalKm} km</span>
               </div>
-              <span className="text-xs px-2 py-1 rounded-full bg-[rgba(255,133,71,0.15)] text-[#FF8547] font-semibold">
-                🏟️ スタジアムまで {nextUnlock.remaining}km
-              </span>
+              {nextUnlock && (
+                <span className="text-xs px-2 py-1 rounded-full bg-[rgba(255,133,71,0.15)] text-[#FF8547] font-semibold">
+                  {nextUnlock.icon} {nextUnlock.name}まで {Math.max(0, nextUnlock.unlockedAt - totalKm)}km
+                </span>
+              )}
             </div>
             <div className="px-4 pb-4">
               <ProgressBar
-                value={myTownKm}
-                max={nextUnlock.km}
+                value={totalKm}
+                max={nextUnlock ? nextUnlock.unlockedAt : BUILDINGS[BUILDINGS.length - 1].unlockedAt}
                 unit="km"
                 label="次のアンロック"
                 showLv={true}
