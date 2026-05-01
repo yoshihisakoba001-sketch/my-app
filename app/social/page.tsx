@@ -131,8 +131,8 @@ export default function SocialPage() {
                 <div className="flex items-end justify-center gap-4 mb-6 h-36">
                   {/* 2nd */}
                   <div className="flex flex-col items-center gap-1">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base border-2"
-                      style={{ background: `${ranking[1].color}20`, borderColor: `${ranking[1].color}55`, color: ranking[1].color }}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl border-2"
+                      style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
                       {ranking[1].icon || ranking[1].name[0]}
                     </div>
                     <div className="w-20 h-16 rounded-t-xl flex flex-col items-center justify-center gap-1 border"
@@ -144,8 +144,8 @@ export default function SocialPage() {
                   {/* 1st */}
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-xl">👑</span>
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base border-2"
-                      style={{ background: `${ranking[0].color}20`, borderColor: `${ranking[0].color}55`, color: ranking[0].color }}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl border-2"
+                      style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
                       {ranking[0].icon || ranking[0].name[0]}
                     </div>
                     <div className="w-20 h-24 rounded-t-xl flex flex-col items-center justify-center gap-1 border"
@@ -156,8 +156,8 @@ export default function SocialPage() {
                   </div>
                   {/* 3rd */}
                   <div className="flex flex-col items-center gap-1">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base border-2"
-                      style={{ background: `${ranking[2].color}20`, borderColor: `${ranking[2].color}55`, color: ranking[2].color }}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl border-2"
+                      style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
                       {ranking[2].icon || ranking[2].name[0]}
                     </div>
                     <div className="w-20 h-12 rounded-t-xl flex flex-col items-center justify-center gap-1 border"
@@ -176,26 +176,26 @@ export default function SocialPage() {
                   return (
                     <div key={i} className="rounded-xl px-4 py-3 flex items-center gap-3 border"
                       style={{
-                        background: isMe ? 'rgba(255,59,139,0.08)' : 'rgba(255,255,255,0.8)',
-                        borderColor: isMe ? 'rgba(255,59,139,0.3)' : 'var(--border)',
+                        background: isMe ? 'var(--accent-bg)' : 'var(--bg-card)',
+                        borderColor: isMe ? 'var(--border-accent)' : 'var(--border)',
                       }}>
                       <span className="text-xl w-7 text-center">
                         {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span className="text-sm font-bold" style={{ color: 'var(--text-muted)' }}>{i + 1}</span>}
                       </span>
                       <div className="w-11 h-11 rounded-full flex items-center justify-center text-2xl border"
                         style={{
-                          background: isMe ? 'rgba(247, 245, 246, 0.64)' : '#FFFFFF',
-                          borderColor: isMe ? 'rgba(255,59,139,0.3)' : 'rgba(0,0,0,0.15)',
+                          background: 'rgba(247, 245, 246, 0.64)',
+                          borderColor: isMe ? 'var(--border-accent)' : 'var(--border)',
                         }}>
                         {m.icon || m.name[0]}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold" style={{ color: isMe ? '#FF3B8B' : 'var(--text-primary)' }}>
+                        <p className="text-sm font-semibold" style={{ color: isMe ? 'var(--accent)' : 'var(--text-primary)' }}>
                           {m.name}{isMe ? '（あなた）' : ''}
                         </p>
                         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{m.runs}回</p>
                       </div>
-                      <span className="text-sm font-bold" style={{ color: isMe ? '#FF3B8B' : 'var(--text-primary)' }}>{m.km}km</span>
+                      <span className="text-sm font-bold" style={{ color: isMe ? 'var(--accent)' : 'var(--text-primary)' }}>{m.km}km</span>
                     </div>
                   );
                 })}
@@ -220,20 +220,19 @@ export default function SocialPage() {
               return (
                 <div key={i} className="rounded-xl p-4 border"
                   style={{
-                    background: isMe ? 'rgba(255,59,139,0.05)' : 'var(--bg-card)',
-                    borderColor: isMe ? 'rgba(255,59,139,0.2)' : 'var(--border)',
+                    background: isMe ? 'var(--accent-bg)' : 'var(--bg-card)',
+                    borderColor: isMe ? 'var(--border-accent)' : 'var(--border)',
                   }}>
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold border"
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl border"
                       style={{
-                        background: isMe ? 'rgba(255,59,139,0.15)' : `${item.color}20`,
-                        borderColor: isMe ? 'rgba(255,59,139,0.4)' : `${item.color}55`,
-                        color: isMe ? '#FF3B8B' : item.color,
+                        background: 'rgba(247, 245, 246, 0.64)',
+                        borderColor: isMe ? 'var(--border-accent)' : 'var(--border)',
                       }}>
                       {item.icon || item.name[0]}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold" style={{ color: isMe ? '#FF3B8B' : 'var(--text-primary)' }}>
+                      <p className="text-sm font-semibold" style={{ color: isMe ? 'var(--accent)' : 'var(--text-primary)' }}>
                         {item.name}{isMe ? '（あなた）' : ''}
                       </p>
                       <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{getTimeAgo(item.createdAt)}</p>
