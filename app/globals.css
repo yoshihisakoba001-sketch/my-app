@@ -1,5 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -20,3 +19,44 @@ body {
 
 .hide-scroll::-webkit-scrollbar { display: none; }
 .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ===== テーマ変数 ===== */
+:root {
+  /* ライトモード */
+  --bg: #F0EFF8;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F5F5FF;
+  --bg-input: #F0EFF8;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-accent: rgba(255, 59, 139, 0.3);
+  --text-primary: #1A1A2E;
+  --text-secondary: #6B6B8A;
+  --text-muted: #A0A0BE;
+  --accent: #FF3B8B;
+  --accent-bg: rgba(255, 59, 139, 0.1);
+  --accent-2: #3B82F6;
+  --accent-2-bg: rgba(59, 130, 246, 0.1);
+  --accent-3: #F97316;
+  --accent-3-bg: rgba(249, 115, 22, 0.1);
+  --nav-bg: rgba(255, 255, 255, 0.96);
+}
+
+.dark {
+  /* ダークモード */
+  --bg: #08080F;
+  --bg-card: rgba(26, 26, 40, 0.85);
+  --bg-card-hover: rgba(36, 36, 56, 0.9);
+  --bg-input: rgba(26, 26, 40, 0.9);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-accent: rgba(197, 255, 71, 0.3);
+  --text-primary: #EEEEF8;
+  --text-secondary: #7777A0;
+  --text-muted: #44445A;
+  --accent: #C5FF47;
+  --accent-bg: rgba(197, 255, 71, 0.1);
+  --accent-2: #47B8FF;
+  --accent-2-bg: rgba(71, 184, 255, 0.1);
+  --accent-3: #FF8547;
+  --accent-3-bg: rgba(255, 133, 71, 0.1);
+  --nav-bg: rgba(10, 10, 18, 0.96);
+}

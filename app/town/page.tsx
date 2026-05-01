@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import BottomNav from '../components/BottomNav';
 import ProgressBar from '../components/ProgressBar';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../components/ThemeContext';
 
 const BUILDINGS = [
   { name: '公園',       unlockedAt: 100, icon: '🌳' },
@@ -22,6 +23,109 @@ const groupMembers = [
   { name: '山本', km: 156, color: '#FF8547' },
   { name: '佐藤', km: 89,  color: '#B847FF' },
 ];
+
+const DayTown = ({ km }: { km: number }) => (
+  <svg viewBox="0 0 360 160" style={{ width: '100%', height: '100%' }}>
+    <defs>
+      <linearGradient id="daysky" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#87CEEB"/>
+        <stop offset="100%" stopColor="#B8E4F9"/>
+      </linearGradient>
+    </defs>
+    <rect width="360" height="160" fill="url(#daysky)"/>
+    {/* 雲 */}
+    <ellipse cx="60" cy="25" rx="20" ry="10" fill="white" opacity="0.8"/>
+    <ellipse cx="75" cy="20" rx="15" ry="10" fill="white" opacity="0.8"/>
+    <ellipse cx="200" cy="30" rx="18" ry="8" fill="white" opacity="0.7"/>
+    <ellipse cx="215" cy="25" rx="12" ry="8" fill="white" opacity="0.7"/>
+    {/* 太陽 */}
+    <circle cx="320" cy="25" r="16" fill="#FFD54F" opacity="0.95"/>
+    {/* 地面 */}
+    <rect x="0" y="130" width="360" height="30" fill="#4CAF50"/>
+    <rect x="0" y="130" width="360" height="6" fill="#81C784"/>
+    {/* 道路 */}
+    {[0,35,70,105,140,175,210,245,280,315].map(x => (
+      <rect key={x} x={x} y={133} width={22} height={3} fill="#A5D6A7" opacity="0.5"/>
+    ))}
+    {/* 建物1 小 */}
+    <rect x="5" y="95" width="25" height="37" fill="#ECEFF1" rx="1"/>
+    <rect x="8" y="88" width="19" height="9" fill="#CFD8DC" rx="1"/>
+    <rect x="9" y="100" width="6" height="6" fill="#B3E5FC" opacity="0.9"/>
+    <rect x="18" y="100" width="6" height="6" fill="#B3E5FC" opacity="0.9"/>
+    <rect x="9" y="110" width="6" height="6" fill="#B3E5FC" opacity="0.7"/>
+    <rect x="18" y="110" width="6" height="6" fill="#B3E5FC" opacity="0.7"/>
+    <rect x="12" y="120" width="8" height="12" fill="#8D6E63" rx="1"/>
+    {/* 建物2 高層 */}
+    <rect x="36" y="45" width="32" height="87" fill="#B0BEC5" rx="1"/>
+    <rect x="51" y="38" width="2" height="8" fill="#90A4AE"/>
+    <circle cx="52" cy="37" r="2" fill="#EF9A9A" opacity="0.8"/>
+    {[0,1,2].map(col => [0,1,2,3,4,5].map(row => (
+      <rect key={`b2-${col}-${row}`} x={40+col*10} y={50+row*12} width={7} height={8}
+        fill="#B3E5FC" opacity={col===1&&row===1 ? 0.4 : col===2&&row===2 ? 0.3 : 0.8}/>
+    )))}
+    {/* 公園（100km） */}
+    {km >= 100 && (
+      <>
+        <rect x="74" y="120" width="42" height="12" fill="#388E3C" rx="1"/>
+        <circle cx="85" cy="116" r="9" fill="#66BB6A"/>
+        <circle cx="97" cy="118" r="7" fill="#4CAF50"/>
+        <circle cx="108" cy="116" r="8" fill="#81C784"/>
+        <circle cx="82" cy="120" r="5" fill="#388E3C"/>
+      </>
+    )}
+    {/* 建物3 中 */}
+    <rect x="122" y="75" width="28" height="57" fill="#ECEFF1" rx="1"/>
+    <rect x="122" y="68" width="28" height="9" fill="#CFD8DC" rx="1"/>
+    {[0,1].map(col => [0,1,2,3].map(row => (
+      <rect key={`b3-${col}-${row}`} x={126+col*13} y={78+row*13} width={9} height={9}
+        fill="#B3E5FC" opacity={col===0&&row===2 ? 0.4 : 0.8}/>
+    )))}
+    {/* 建物4 超高層 */}
+    <rect x="156" y="30" width="38" height="102" fill="#90A4AE" rx="1"/>
+    <rect x="170" y="22" width="10" height="10" fill="#78909C" rx="1"/>
+    <rect x="173" y="19" width="4" height="5" fill="#B0BEC5"/>
+    {[0,1].map(col => [0,1,2,3,4,5,6].map(row => (
+      <rect key={`b4-${col}-${row}`} x={161+col*16} y={36+row*13} width={11} height={9}
+        fill="#B3E5FC" opacity={col===0&&row===3 ? 0.3 : col===1&&row===1 ? 0.4 : 0.85}/>
+    )))}
+    {/* 橋（150km） */}
+    {km >= 150 && (
+      <>
+        <rect x="202" y="120" width="56" height="12" fill="#78909C" rx="2"/>
+        <path d="M202 121 Q218 110 230 121 Q242 132 258 121" stroke="#90A4AE" strokeWidth="2.5" fill="none"/>
+        <rect x="214" y="108" width="3" height="14" fill="#607D8B"/>
+        <rect x="242" y="108" width="3" height="14" fill="#607D8B"/>
+      </>
+    )}
+    {/* 建物5 中 */}
+    <rect x="206" y="68" width="24" height="64" fill="#E8EAF6" rx="1"/>
+    {[0,1].map(col => [0,1,2,3].map(row => (
+      <rect key={`b5-${col}-${row}`} x={210+col*11} y={73+row*13} width={8} height={9}
+        fill="#B3E5FC" opacity={col===1&&row===0 ? 0.4 : 0.8}/>
+    )))}
+    {/* 建物6 高 */}
+    <rect x="236" y="42" width="30" height="90" fill="#CFD8DC" rx="1"/>
+    <rect x="238" y="44" width="8" height="86" fill="white" opacity="0.15"/>
+    {[0,1].map(col => [0,1,2,3,4,5].map(row => (
+      <rect key={`b6-${col}-${row}`} x={240+col*13} y={48+row*12} width={9} height={8}
+        fill="#B3E5FC" opacity={col===1&&row===3 ? 0.3 : col===0&&row===1 ? 0.4 : 0.85}/>
+    )))}
+    {/* スタジアム（300km） */}
+    {km >= 300 ? (
+      <>
+        <ellipse cx="318" cy="112" rx="34" ry="20" fill="#A5D6A7" stroke="#4CAF50" strokeWidth="1.5"/>
+        <ellipse cx="318" cy="112" rx="22" ry="13" fill="#C8E6C9"/>
+        <text x="318" y="116" textAnchor="middle" fontSize="9" fill="#2E7D32" fontFamily="sans-serif" fontWeight="bold">STADIUM</text>
+      </>
+    ) : (
+      <>
+        <ellipse cx="318" cy="112" rx="32" ry="18" fill="none" stroke="#90A4AE" strokeWidth="1" opacity="0.4" strokeDasharray="4 3"/>
+        <text x="318" y="110" textAnchor="middle" fontSize="7" fill="#90A4AE" opacity="0.5" fontFamily="sans-serif">🔒</text>
+        <text x="318" y="119" textAnchor="middle" fontSize="6" fill="#90A4AE" opacity="0.4" fontFamily="sans-serif">STADIUM</text>
+      </>
+    )}
+  </svg>
+);
 
 const NightTown = ({ km }: { km: number }) => (
   <svg viewBox="0 0 360 160" style={{ width: '100%', height: '100%' }}>
@@ -118,6 +222,7 @@ const NightTown = ({ km }: { km: number }) => (
 );
 
 export default function TownPage() {
+  const { isDark } = useTheme();
   const [viewTab, setViewTab] = useState<'my' | 'group'>('my');
   const [totalKm, setTotalKm] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -126,20 +231,13 @@ export default function TownPage() {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
-      const { data: runs } = await supabase
-        .from('runs')
-        .select('distance')
-        .eq('user_id', user.id);
-
+      const { data: runs } = await supabase.from('runs').select('distance').eq('user_id', user.id);
       if (runs) {
         const total = runs.reduce((sum, r) => sum + (r.distance || 0), 0);
         setTotalKm(Math.round(total * 10) / 10);
       }
-
       setLoading(false);
     };
-
     fetchData();
   }, []);
 
@@ -147,44 +245,42 @@ export default function TownPage() {
   const buildings = BUILDINGS.map(b => ({ ...b, unlocked: totalKm >= b.unlockedAt }));
 
   return (
-    <div className="min-h-screen bg-[#08080F] text-[#EEEEF8] pb-24">
+    <div className="min-h-screen pb-24" style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}>
 
-      {/* Header */}
-      <div className="px-5 pt-12 pb-4 border-b border-white/10">
+      <div className="px-5 pt-12 pb-4 border-b" style={{ borderColor: 'var(--border)' }}>
         <h1 className="text-xl font-bold tracking-tight">マイタウン</h1>
-        <p className="text-xs text-[#7777A0] mt-1">走るたびに街が育ちます</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>走るたびに街が育ちます</p>
       </div>
 
-      {/* Tab switcher */}
       <div className="px-5 pt-4 flex gap-2">
         {[
           { id: 'my',    label: '🏙️ 自分の街' },
           { id: 'group', label: '👥 グループの街' },
         ].map(t => (
           <button key={t.id} onClick={() => setViewTab(t.id as any)}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
-              viewTab === t.id
-                ? 'bg-[rgba(197,255,71,0.1)] text-[#C5FF47] border-[rgba(197,255,71,0.3)]'
-                : 'bg-[rgba(26,26,40,0.6)] text-[#7777A0] border-white/10'
-            }`}>
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all"
+            style={{
+              background: viewTab === t.id ? 'var(--accent-bg)' : 'var(--bg-card)',
+              color: viewTab === t.id ? 'var(--accent)' : 'var(--text-secondary)',
+              borderColor: viewTab === t.id ? 'var(--border-accent)' : 'var(--border)',
+            }}>
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* My Town */}
       {viewTab === 'my' && (
         <>
-          <div className="mx-5 mt-4 rounded-2xl overflow-hidden border border-white/10 bg-[#0D0D20]">
+          <div className="mx-5 mt-4 rounded-2xl overflow-hidden border" style={{ borderColor: 'var(--border)', background: isDark ? '#0D0D20' : '#E8F4F8' }}>
             <div style={{ height: 200 }}>
-              <NightTown km={totalKm}/>
+              {isDark ? <NightTown km={totalKm}/> : <DayTown km={totalKm}/>}
             </div>
-            <div className="px-4 py-3 flex items-center justify-between border-t border-white/10">
+            <div className="px-4 py-3 flex items-center justify-between border-t" style={{ borderColor: 'var(--border)' }}>
               <div className="text-sm">
-                累計 <span className="text-[#C5FF47] font-bold">{loading ? '...' : totalKm} km</span>
+                累計 <span className="font-bold" style={{ color: 'var(--accent)' }}>{loading ? '...' : totalKm} km</span>
               </div>
               {nextUnlock && (
-                <span className="text-xs px-2 py-1 rounded-full bg-[rgba(255,133,71,0.15)] text-[#FF8547] font-semibold">
+                <span className="text-xs px-2 py-1 rounded-full font-semibold" style={{ background: 'var(--accent-3-bg)', color: 'var(--accent-3)' }}>
                   {nextUnlock.icon} {nextUnlock.name}まで {Math.max(0, nextUnlock.unlockedAt - totalKm)}km
                 </span>
               )}
@@ -207,22 +303,22 @@ export default function TownPage() {
             </div>
           </div>
 
-          {/* Buildings list */}
           <div className="px-5 pt-5">
-            <p className="text-[11px] font-semibold tracking-widest uppercase text-[#44445A] mb-3">施設一覧</p>
+            <p className="text-[11px] font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--text-muted)' }}>施設一覧</p>
             <div className="grid grid-cols-2 gap-3">
               {buildings.map((b, i) => (
-                <div key={i} className={`rounded-xl p-3 border flex items-center gap-3 ${
-                  b.unlocked
-                    ? 'bg-[rgba(197,255,71,0.05)] border-[rgba(197,255,71,0.2)]'
-                    : 'bg-[rgba(26,26,40,0.4)] border-white/5 opacity-40'
-                }`}>
+                <div key={i} className="rounded-xl p-3 border flex items-center gap-3"
+                  style={{
+                    background: b.unlocked ? 'var(--accent-bg)' : 'var(--bg-card)',
+                    borderColor: b.unlocked ? 'var(--border-accent)' : 'var(--border)',
+                    opacity: b.unlocked ? 1 : 0.5,
+                  }}>
                   <span className="text-2xl">{b.icon}</span>
                   <div>
-                    <p className={`text-sm font-semibold ${b.unlocked ? 'text-[#EEEEF8]' : 'text-[#44445A]'}`}>
+                    <p className="text-sm font-semibold" style={{ color: b.unlocked ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                       {b.name}
                     </p>
-                    <p className="text-[10px] text-[#7777A0]">
+                    <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
                       {b.unlocked ? '✅ 解放済み' : `🔒 ${b.unlockedAt}kmで解放`}
                     </p>
                   </div>
@@ -233,15 +329,14 @@ export default function TownPage() {
         </>
       )}
 
-      {/* Group Towns */}
       {viewTab === 'group' && (
         <div className="px-5 pt-4 flex flex-col gap-4">
           {groupMembers.map((member, i) => (
-            <div key={i} className="rounded-2xl overflow-hidden border border-white/10 bg-[#0D0D20]">
+            <div key={i} className="rounded-2xl overflow-hidden border" style={{ borderColor: 'var(--border)', background: isDark ? '#0D0D20' : '#E8F4F8' }}>
               <div style={{ height: 160 }}>
-                <NightTown km={member.km}/>
+                {isDark ? <NightTown km={member.km}/> : <DayTown km={member.km}/>}
               </div>
-              <div className="px-4 py-3 flex items-center justify-between border-t border-white/10">
+              <div className="px-4 py-3 flex items-center justify-between border-t" style={{ borderColor: 'var(--border)' }}>
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border"
                     style={{ background: `${member.color}20`, borderColor: `${member.color}55`, color: member.color }}>
@@ -249,7 +344,7 @@ export default function TownPage() {
                   </div>
                   <span className="text-sm font-semibold" style={{ color: member.color }}>{member.name}</span>
                 </div>
-                <span className="text-sm font-bold text-[#C5FF47]">{member.km} km</span>
+                <span className="text-sm font-bold" style={{ color: 'var(--accent)' }}>{member.km} km</span>
               </div>
             </div>
           ))}
