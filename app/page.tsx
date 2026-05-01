@@ -7,36 +7,154 @@ import { supabase } from './lib/supabase';
 import { getWeather, getUserLocation, WeatherData } from './lib/weather';
 import { useTheme } from './components/ThemeContext';
 
-const MiniTown = ({ isDark }: { isDark: boolean }) => (
+const MiniTown = ({ isDark, km }: { isDark: boolean; km: number }) => (
   <svg viewBox="0 0 340 80" style={{ width: '100%', height: 80 }}>
     <defs>
       <linearGradient id="minisky" x1="0%" y1="0%" x2="0%" y2="100%">
         <stop offset="0%" stopColor={isDark ? '#05050F' : '#87CEEB'}/>
-        <stop offset="100%" stopColor={isDark ? '#0D0D20' : '#B8E4F9'}/>
+        <stop offset="100%" stopColor={isDark ? '#0D0D20' : '#C9E8F5'}/>
       </linearGradient>
     </defs>
     <rect width="340" height="80" fill="url(#minisky)"/>
-    <rect x="0" y="66" width="340" height="14" fill={isDark ? '#0D1A0D' : '#4CAF50'}/>
-    <rect x="0" y="66" width="340" height="4" fill={isDark ? '#181828' : '#81C784'}/>
-    <rect x="8" y="48" width="18" height="20" fill={isDark ? '#1E1E3A' : '#ECEFF1'} rx="1"/>
-    <rect x="12" y="52" width="4" height="4" fill={isDark ? '#C5FF47' : '#FFF9C4'} opacity="0.8"/>
-    <rect x="18" y="52" width="4" height="4" fill={isDark ? '#47B8FF' : '#B3E5FC'} opacity="0.8"/>
-    <rect x="32" y="36" width="24" height="32" fill={isDark ? '#252540' : '#F5F5F5'} rx="1"/>
-    <rect x="36" y="41" width="5" height="5" fill={isDark ? '#C5FF47' : '#FFF176'} opacity="0.8"/>
-    <rect x="44" y="41" width="5" height="5" fill={isDark ? '#47B8FF' : '#81D4FA'} opacity="0.8"/>
-    <circle cx="75" cy="60" r="6" fill={isDark ? '#1A4020' : '#66BB6A'}/>
-    <circle cx="86" cy="61" r="5" fill={isDark ? '#183818' : '#4CAF50'}/>
-    <rect x="98" y="44" width="20" height="24" fill={isDark ? '#1E1E38' : '#E8EAF6'} rx="1"/>
-    <rect x="102" y="49" width="4" height="4" fill={isDark ? '#C5FF47' : '#FFF59D'} opacity="0.9"/>
-    <rect x="124" y="28" width="28" height="40" fill={isDark ? '#282845' : '#E3F2FD'} rx="1"/>
-    <rect x="128" y="33" width="5" height="5" fill={isDark ? '#C5FF47' : '#FFF176'} opacity="0.9"/>
-    <rect x="137" y="33" width="5" height="5" fill={isDark ? '#47B8FF' : '#81D4FA'} opacity="0.7"/>
-    <rect x="188" y="36" width="22" height="32" fill={isDark ? '#222240' : '#EDE7F6'} rx="1"/>
-    <rect x="192" y="41" width="5" height="5" fill={isDark ? '#C5FF47' : '#FFF59D'} opacity="0.8"/>
-    <rect x="220" y="56" width="50" height="10" fill={isDark ? '#0A1A2A' : '#B3E5FC'} rx="2"/>
-    {!isDark && <circle cx="300" cy="15" r="10" fill="#FFD54F" opacity="0.9"/>}
+    {/* 太陽 or 月 */}
+    {isDark ? (
+      <>
+        <circle cx="310" cy="12" r="7" fill="#2A2A40"/>
+        <circle cx="306" cy="10" r="7" fill="#05050A"/>
+      </>
+    ) : (
+      <circle cx="310" cy="12" r="9" fill="#FFD700"/>
+    )}
+    {/* 雲（ライトのみ） */}
+    {!isDark && (
+      <>
+        <ellipse cx="50" cy="14" rx="16" ry="8" fill="white" opacity="0.9"/>
+        <ellipse cx="38" cy="17" rx="10" ry="6" fill="white" opacity="0.9"/>
+        <ellipse cx="62" cy="17" rx="10" ry="6" fill="white" opacity="0.9"/>
+        <ellipse cx="160" cy="10" rx="12" ry="6" fill="white" opacity="0.8"/>
+        <ellipse cx="150" cy="13" rx="8" ry="5" fill="white" opacity="0.8"/>
+        <ellipse cx="170" cy="13" rx="8" ry="5" fill="white" opacity="0.8"/>
+      </>
+    )}
+    {/* 星（ダークのみ） */}
+    {isDark && [[15,8],[40,14],[80,5],[130,10],[180,4],[220,9],[270,6]].map(([x,y],i) => (
+      <circle key={i} cx={x} cy={y} r={0.8} fill="#EEEEF8" opacity="0.7"/>
+    ))}
+    {/* 地面 */}
+    <rect x="0" y="64" width="340" height="16" fill={isDark ? '#0D1A0D' : '#5D9E3F'}/>
+    <rect x="0" y="64" width="340" height="4" fill={isDark ? '#181828' : '#7BC142'}/>
+    {/* 道路（ライトのみ） */}
+    {!isDark && (
+      <>
+        <rect x="0" y="68" width="340" height="5" fill="#8B8B8B" opacity="0.3"/>
+        {[0,40,80,120,160,200,240,280,320].map(x => (
+          <rect key={x} x={x} y={70} width={18} height={1} fill="white" opacity="0.4"/>
+        ))}
+      </>
+    )}
+    {/* ダーク道路 */}
+    {isDark && [0,35,70,105,140,175,210,245,280,315].map(x => (
+      <rect key={x} x={x} y={67} width={22} height={2} fill="#2A2A48" opacity="0.7"/>
+    ))}
+
+    {/* 建物1: 小さい建物 */}
+    <rect x="4" y="46" width="20" height="20" fill={isDark ? '#1E1E3A' : '#F0F0F0'} rx="1"/>
+    <rect x="4" y="41" width="20" height="7" fill={isDark ? '#16162E' : '#E0E0E0'} rx="1"/>
+    <rect x="7" y="49" width="5" height="5" fill={isDark ? '#FFB347' : '#87CEEB'} opacity="0.8"/>
+    <rect x="15" y="49" width="5" height="5" fill={isDark ? '#C5FF47' : '#87CEEB'} opacity="0.8"/>
+    <rect x="10" y="57" width="6" height="7" fill={isDark ? '#8D6E63' : '#8D6E63'} rx="1"/>
+
+    {/* 建物2: 赤茶色ビル */}
+    <rect x="28" y="28" width="22" height="38" fill={isDark ? '#252542' : '#C0392B'} rx="1"/>
+    <rect x="28" y="24" width="22" height="6" fill={isDark ? '#1E1E38' : '#A93226'} rx="1"/>
+    {[0,1].map(col => [0,1,2].map(row => (
+      <rect key={`b2-${col}-${row}`} x={31+col*10} y={31+row*10} width={7} height={7}
+        fill={isDark ? '#FFB347' : '#FFE0B2'} opacity={0.8}/>
+    )))}
+
+    {/* 建物3: 高層灰色ビル */}
+    <rect x="54" y="18" width="26" height="48" fill={isDark ? '#28284A' : '#9E9E9E'} rx="1"/>
+    <rect x="54" y="13" width="26" height="7" fill={isDark ? '#222244' : '#757575'} rx="1"/>
+    <rect x="65" y="8" width="2" height="7" fill={isDark ? '#3A3A58' : '#616161'}/>
+    {[0,1].map(col => [0,1,2,3].map(row => (
+      <rect key={`b3-${col}-${row}`} x={57+col*12} y={20+row*10} width={8} height={7}
+        fill={isDark ? '#C5FF47' : '#B3E5FC'} opacity={isDark ? 0.7 : 0.8}/>
+    )))}
+
+    {/* 建物4: 青いオフィスビル */}
+    <rect x="84" y="10" width="30" height="56" fill={isDark ? '#1C1C38' : '#42A5F5'} rx="1"/>
+    <rect x="84" y="5" width="30" height="7" fill={isDark ? '#18183A' : '#1E88E5'} rx="1"/>
+    {[0,1].map(col => [0,1,2,3,4].map(row => (
+      <rect key={`b4-${col}-${row}`} x={87+col*14} y={13+row*10} width={10} height={7}
+        fill={isDark ? '#47B8FF' : 'white'} opacity={isDark ? 0.6 : 0.3}/>
+    )))}
+
+    {/* 建物5: オレンジビル */}
+    <rect x="118" y="22" width="22" height="44" fill={isDark ? '#202040' : '#FF8F00'} rx="1"/>
+    <rect x="118" y="17" width="22" height="7" fill={isDark ? '#1A1A38' : '#E65100'} rx="1"/>
+    {[0,1].map(col => [0,1,2].map(row => (
+      <rect key={`b5-${col}-${row}`} x={121+col*11} y={25+row*10} width={7} height={7}
+        fill={isDark ? '#FFB347' : '#FFF9C4'} opacity={0.8}/>
+    )))}
+
+    {/* 建物6: 青緑ビル */}
+    <rect x="144" y="14" width="24" height="52" fill={isDark ? '#222240' : '#26C6DA'} rx="1"/>
+    <rect x="144" y="9" width="24" height="7" fill={isDark ? '#1C1C3A' : '#00ACC1'} rx="1"/>
+    {[0,1].map(col => [0,1,2,3].map(row => (
+      <rect key={`b6-${col}-${row}`} x={147+col*12} y={17+row*10} width={9} height={7}
+        fill={isDark ? '#C5FF47' : 'white'} opacity={isDark ? 0.5 : 0.3}/>
+    )))}
+
+    {/* 木 */}
+    <rect x="174" y="55" width="4" height="10" fill={isDark ? '#5D4037' : '#5D4037'}/>
+    <circle cx="176" cy="50" r="8" fill={isDark ? '#1A4020' : '#2E7D32'}/>
+    <circle cx="176" cy="50" r="6" fill={isDark ? '#1E4828' : '#388E3C'}/>
+    <rect x="188" y="56" width="4" height="8" fill={isDark ? '#5D4037' : '#5D4037'}/>
+    <circle cx="190" cy="52" r="7" fill={isDark ? '#183818' : '#33691E'}/>
+
+    {/* 50km: 追加の木 */}
+    {km >= 50 && (
+      <>
+        <rect x="205" y="55" width="4" height="10" fill="#5D4037"/>
+        <circle cx="207" cy="50" r="7" fill={isDark ? '#1A4020' : '#2E7D32'}/>
+      </>
+    )}
+    {/* 100km: ピンクビル */}
+    {km >= 100 && (
+      <rect x="215" y="30" width="16" height="36" fill={isDark ? '#1A1A30' : '#EF9A9A'} rx="1"/>
+    )}
+    {/* 150km: 青緑ビル */}
+    {km >= 150 && (
+      <rect x="235" y="22" width="20" height="44" fill={isDark ? '#1E1E3A' : '#80CBC4'} rx="1"/>
+    )}
+    {/* 200km: 黄色ビル */}
+    {km >= 200 && (
+      <rect x="259" y="28" width="18" height="38" fill={isDark ? '#181830' : '#FFCC02'} rx="1"/>
+    )}
+    {/* 250km: 紫ビル */}
+    {km >= 250 && (
+      <rect x="281" y="18" width="22" height="48" fill={isDark ? '#202040' : '#CE93D8'} rx="1"/>
+    )}
+    {/* 300km: スタジアム */}
+    {km >= 300 && (
+      <ellipse cx="320" cy="58" rx="18" ry="10" fill={isDark ? '#1A2A1A' : '#A5D6A7'} stroke={isDark ? '#C5FF47' : '#4CAF50'} strokeWidth="1"/>
+    )}
   </svg>
 );
+
+const BUILDINGS = [
+  { name: '木',         unlockedAt: 50,  icon: '🌳' },
+  { name: '公園',       unlockedAt: 100, icon: '🌳' },
+  { name: '橋',         unlockedAt: 150, icon: '🌉' },
+  { name: 'カフェ',     unlockedAt: 200, icon: '☕' },
+  { name: '川・森',     unlockedAt: 250, icon: '🌊' },
+  { name: 'スタジアム', unlockedAt: 300, icon: '🏟️' },
+  { name: '図書館',     unlockedAt: 350, icon: '📚' },
+  { name: '温泉',       unlockedAt: 400, icon: '♨️' },
+  { name: '城',         unlockedAt: 500, icon: '🏯' },
+  { name: '花火',       unlockedAt: 600, icon: '🎆' },
+  { name: '城アップグレード', unlockedAt: 750, icon: '🚩' },
+];
 
 const getTrainingIcon = (type: string) => {
   if (type === 'ロング走') return '🏃';
@@ -202,10 +320,17 @@ export default function Home() {
           <a href="/town" className="text-xs font-semibold" style={{ color: 'var(--accent)' }}>全景を見る →</a>
         </div>
         <div className="rounded-2xl overflow-hidden border" style={{ background: isDark ? 'rgba(13,13,32,0.9)' : 'rgba(240,239,248,0.9)', borderColor: 'var(--border)' }}>
-          <MiniTown isDark={isDark} />
+          <MiniTown isDark={isDark} km={totalKm} />
           <div className="px-4 py-2.5 flex items-center justify-between border-t" style={{ borderColor: 'var(--border)' }}>
             <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>累計 <span className="font-bold" style={{ color: 'var(--accent)' }}>{totalKm} km</span></span>
-            <span className="text-xs px-2 py-1 rounded-full font-semibold" style={{ background: 'var(--accent-3-bg)', color: 'var(--accent-3)' }}>🏟️ スタジアムまで {Math.max(0, 300 - totalKm)}km</span>
+            {(() => {
+              const next = BUILDINGS.find(b => b.unlockedAt > totalKm);
+              return next ? (
+                <span className="text-xs px-2 py-1 rounded-full font-semibold" style={{ background: 'var(--accent-3-bg)', color: 'var(--accent-3)' }}>
+                  {next.icon} {next.name}まで {Math.max(0, next.unlockedAt - totalKm)}km
+                </span>
+              ) : null;
+            })()}
           </div>
         </div>
       </div>
