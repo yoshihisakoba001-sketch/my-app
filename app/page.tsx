@@ -38,8 +38,6 @@ const MiniTown = ({ isDark }: { isDark: boolean }) => (
   </svg>
 );
 
-const WEEKLY_GOAL = 42;
-
 const getTrainingIcon = (type: string) => {
   if (type === 'ロング走') return '🏃';
   if (type === 'テンポ走') return '⚡';
@@ -51,6 +49,7 @@ const getTrainingIcon = (type: string) => {
 export default function Home() {
   const { isDark } = useTheme();
   const [weeklyKm, setWeeklyKm] = useState(0);
+  const [weeklyGoal, setWeeklyGoal] = useState<number | null>(null);
   const [totalKm, setTotalKm] = useState(0);
   const [recentRuns, setRecentRuns] = useState<any[]>([]);
   const [race, setRace] = useState<any>(null);
@@ -78,6 +77,7 @@ export default function Home() {
       monday.setHours(0, 0, 0, 0);
       const mondayStr = `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
 
+      // 今週の記録
       const { data: weekRuns } = await supabase
         .from('runs').select('distance').eq('user_id', user.id).gte('date', mondayStr);
       if (weekRuns) {
@@ -85,6 +85,18 @@ export default function Home() {
         setWeeklyKm(Math.round(total * 10) / 10);
       }
 
+      // 今週の週別計画を取得
+      const { data: weekPlan } = await supabase
+        .from('plans')
+        .select('target_km')
+        .eq('user_id', user.id)
+        .lte('week_start', mondayStr)
+        .order('week_start', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (weekPlan) setWeeklyGoal(weekPlan.target_km);
+
+      // 累計記録
       const { data: allRuns } = await supabase
         .from('runs').select('distance, date, note').eq('user_id', user.id).order('date', { ascending: false });
       if (allRuns) {
@@ -93,14 +105,17 @@ export default function Home() {
         setRecentRuns(allRuns.slice(0, 3));
       }
 
+      // 大会データ
       const { data: raceData } = await supabase
         .from('races').select('*').eq('user_id', user.id).order('date', { ascending: true }).limit(1).maybeSingle();
       if (raceData) setRace(raceData);
 
+      // 今日の日次計画
       const { data: todayPlanData } = await supabase
         .from('daily_plans').select('*').eq('user_id', user.id).eq('date', todayStr).maybeSingle();
       if (todayPlanData) setTodayPlan(todayPlanData);
 
+      // 天気
       const location = await getUserLocation();
       if (location) {
         const weatherData = await getWeather(location.lat, location.lon);
@@ -138,7 +153,7 @@ export default function Home() {
       <div className="px-5 pt-4">
         <p className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--text-muted)' }}>今日のトレーニング</p>
         <div className="rounded-2xl p-4 flex items-center gap-4 border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: 'var(--accent-bg)', border: `1px solid var(--border-accent)` }}>
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: 'var(--accent-bg)', border: '1px solid var(--border-accent)' }}>
             {todayPlan ? getTrainingIcon(todayPlan.type) : '⚡'}
           </div>
           <div className="flex-1">
@@ -158,15 +173,27 @@ export default function Home() {
 
       <div className="px-5 pt-4">
         <p className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--text-muted)' }}>今週の進捗</p>
-        <ProgressBar
-          value={weeklyKm}
-          max={WEEKLY_GOAL}
-          unit="km"
-          label="達成率"
-          showLv={true}
-          milestones={[{ value: 10, icon: '⭐' }, { value: 25, icon: '🏃' }, { value: 42, icon: '🏆' }]}
-        />
-        {loading && <p className="text-xs text-center mt-2" style={{ color: 'var(--text-muted)' }}>読み込み中...</p>}
+        {loading ? (
+          <p className="text-xs text-center py-4" style={{ color: 'var(--text-muted)' }}>読み込み中...</p>
+        ) : weeklyGoal === null ? (
+          <div className="rounded-2xl p-4 text-center border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>今週の計画がありません</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>AIコーチに話しかけて計画を作りましょう</p>
+          </div>
+        ) : (
+          <ProgressBar
+            value={weeklyKm}
+            max={weeklyGoal}
+            unit="km"
+            label="達成率"
+            showLv={true}
+            milestones={[
+              { value: Math.round(weeklyGoal * 0.25), icon: '⭐' },
+              { value: Math.round(weeklyGoal * 0.6), icon: '🏃' },
+              { value: weeklyGoal, icon: '🏆' },
+            ]}
+          />
+        )}
       </div>
 
       <div className="px-5 pt-4">
