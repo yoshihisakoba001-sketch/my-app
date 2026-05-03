@@ -3,16 +3,24 @@ import { createClient } from '@supabase/supabase-js';
 
 const client = new Anthropic();
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export async function POST(request: Request) {
-  const { messages, userId } = await request.json();
+  const { messages, userId, accessToken } = await request.json();
+
+  // トークンを使ってユーザー認証済みクライアントを作成
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    }
+  );
 
   let contextData = '';
-  if (userId) {
+  if (userId && accessToken) {
     const { data: races } = await supabase
       .from('races')
       .select('*')
@@ -73,53 +81,31 @@ export async function POST(request: Request) {
 
   const fullReply = response.content[0].type === 'text' ? response.content[0].text : '';
 
-  console.log('fullReply length:', fullReply.length);
-  console.log('userId:', userId);
+  // データ抽出（書き込みはせずフロントに返す）
+  let raceData = null;
+  let planData = null;
+  let dailyPlanData = null;
 
   const raceMatch = fullReply.match(/\[RACE_DATA\]([\s\S]*?)\[\/RACE_DATA\]/);
-  if (raceMatch && userId) {
-    try {
-      const raceData = JSON.parse(raceMatch[1]);
-      await supabase.from('races').upsert({ user_id: userId, ...raceData });
-      console.log('Race saved');
-    } catch (e) {
-      console.error('Race error:', e);
-    }
+  if (raceMatch) {
+    try { raceData = JSON.parse(raceMatch[1]); } catch (e) { console.error('Race parse error:', e); }
   }
 
   const planMatch = fullReply.match(/\[PLAN_DATA\]([\s\S]*?)\[\/PLAN_DATA\]/);
-  if (planMatch && userId) {
-    try {
-      const planData = JSON.parse(planMatch[1]);
-      const plansWithUserId = planData.map((p: any) => ({ ...p, user_id: userId }));
-      await supabase.from('plans').upsert(plansWithUserId);
-      console.log('Plans saved');
-    } catch (e) {
-      console.error('Plan error:', e);
-    }
+  if (planMatch) {
+    try { planData = JSON.parse(planMatch[1]); } catch (e) { console.error('Plan parse error:', e); }
   }
 
   const dailyPlanMatch = fullReply.match(/\[DAILY_PLAN_DATA\]([\s\S]*?)\[\/DAILY_PLAN_DATA\]/);
-  console.log('dailyPlanMatch found:', !!dailyPlanMatch);
-  if (dailyPlanMatch && userId) {
-    try {
-      const dailyPlanData = JSON.parse(dailyPlanMatch[1]);
-      const dailyPlansWithUserId = dailyPlanData.map((p: any) => ({ ...p, user_id: userId }));
-      const dates = dailyPlansWithUserId.map((p: any) => p.date);
-      await supabase.from('daily_plans').delete().eq('user_id', userId).in('date', dates);
-      const { error } = await supabase.from('daily_plans').insert(dailyPlansWithUserId);
-      console.log('Daily plans saved, error:', error);
-    } catch (e) {
-      console.error('Daily plan error:', e);
-    }
+  if (dailyPlanMatch) {
+    try { dailyPlanData = JSON.parse(dailyPlanMatch[1]); } catch (e) { console.error('DailyPlan parse error:', e); }
   }
 
-  // タグを除去（終了タグがない場合も対応）
   const reply = fullReply
     .replace(/\[RACE_DATA\][\s\S]*?(\[\/RACE_DATA\]|$)/g, '')
     .replace(/\[PLAN_DATA\][\s\S]*?(\[\/PLAN_DATA\]|$)/g, '')
     .replace(/\[DAILY_PLAN_DATA\][\s\S]*?(\[\/DAILY_PLAN_DATA\]|$)/g, '')
     .trim();
 
-  return Response.json({ reply });
+  return Response.json({ reply, raceData, planData, dailyPlanData });
 }

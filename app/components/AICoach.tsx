@@ -13,6 +13,7 @@ export default function AICoach() {
   const { isDark } = useTheme();
   const [open, setOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -28,8 +29,11 @@ export default function AICoach() {
   }, [messages, loading]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id);
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        setUserId(data.session.user.id);
+        setAccessToken(data.session.access_token);
+      }
     });
   }, []);
 
@@ -45,15 +49,28 @@ export default function AICoach() {
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, userId }),
+        body: JSON.stringify({ messages: newMessages, userId, accessToken }),
       });
       const data = await res.json();
-      const cleanReply = (data.reply || '')
-        .replace(/\[RACE_DATA\][\s\S]*?\[\/RACE_DATA\]/g, '')
-        .replace(/\[PLAN_DATA\][\s\S]*?\[\/PLAN_DATA\]/g, '')
-        .replace(/\[DAILY_PLAN_DATA\][\s\S]*?\[\/DAILY_PLAN_DATA\]/g, '')
-        .trim();
-      setMessages(prev => [...prev, { role: 'assistant', content: cleanReply }]);
+
+      // クライアント側でSupabaseに書き込む（ユーザーのセッションを使用）
+      if (userId) {
+        if (data.raceData) {
+          await supabase.from('races').upsert({ user_id: userId, ...data.raceData });
+        }
+        if (data.planData) {
+          const plansWithUserId = data.planData.map((p: any) => ({ ...p, user_id: userId }));
+          await supabase.from('plans').upsert(plansWithUserId);
+        }
+        if (data.dailyPlanData) {
+          const dailyPlansWithUserId = data.dailyPlanData.map((p: any) => ({ ...p, user_id: userId }));
+          const dates = dailyPlansWithUserId.map((p: any) => p.date);
+          await supabase.from('daily_plans').delete().eq('user_id', userId).in('date', dates);
+          await supabase.from('daily_plans').insert(dailyPlansWithUserId);
+        }
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', content: data.reply || '' }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'エラーが発生しました。もう一度試してください。' }]);
     } finally {
