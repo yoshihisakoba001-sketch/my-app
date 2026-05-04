@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,12 +15,48 @@ export default function LoginPage() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
+    // 招待リンク経由の場合はサインアップタブを選択
+    if (searchParams.get('mode') === 'signup') {
+      setMode('signup');
+    }
+
+    supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
+        // invite_tokenがあれば友人関係を作成
+        const inviteToken = localStorage.getItem('invite_token');
+        if (inviteToken) {
+          await handleInviteToken(inviteToken, session.user.id);
+          localStorage.removeItem('invite_token');
+        }
         router.push('/');
       }
     });
   }, []);
+
+  const handleInviteToken = async (token: string, newUserId: string) => {
+    // トークンを検索
+    const { data: inviteData } = await supabase
+      .from('invite_tokens')
+      .select('*')
+      .eq('token', token)
+      .is('used_at', null)
+      .gte('expires_at', new Date().toISOString())
+      .single();
+
+    if (!inviteData) return;
+
+    // 友人関係を作成
+    await supabase.from('friendships').insert({
+      requester_id: inviteData.inviter_id,
+      receiver_id: newUserId,
+      status: 'accepted', // 招待経由は自動承認
+    });
+
+    // トークンを使用済みにする
+    await supabase.from('invite_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('id', inviteData.id);
+  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -30,7 +67,11 @@ export default function LoginPage() {
       if (error) {
         setMessage(error.message);
       } else if (data.user) {
-        await supabase.from('profiles').insert({ id: data.user.id, name });
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          name,
+          email, // emailも保存
+        });
         setMessage('確認メールを送信しました。メールを確認してください。');
       }
     } else {
