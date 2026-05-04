@@ -190,7 +190,7 @@ export default function LandingPage() {
   const [scene, setScene] = useState(0);
   const [fadeIn, setFadeIn] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const animRef = useRef<NodeJS.Timeout | null>(null);
+  const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     animRef.current = setInterval(() => {
@@ -200,7 +200,7 @@ export default function LandingPage() {
         setFadeIn(true);
       }, 400);
     }, 3500);
-    return () => clearInterval(animRef.current);
+    return () => { if (animRef.current) clearInterval(animRef.current); };
   }, []);
 
   const faqs = [
