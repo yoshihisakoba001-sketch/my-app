@@ -190,7 +190,7 @@ export default function LandingPage() {
   const [scene, setScene] = useState(0);
   const [fadeIn, setFadeIn] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const animRef = useRef<NodeJS.Timeout>();
+  const animRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     animRef.current = setInterval(() => {
