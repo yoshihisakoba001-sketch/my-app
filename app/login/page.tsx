@@ -15,14 +15,12 @@ export default function LoginPage() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    // 招待リンク経由の場合はサインアップタブを選択
     if (searchParams.get('mode') === 'signup') {
       setMode('signup');
     }
 
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
-        // invite_tokenがあれば友人関係を作成
         const inviteToken = localStorage.getItem('invite_token');
         if (inviteToken) {
           await handleInviteToken(inviteToken, session.user.id);
@@ -34,7 +32,6 @@ export default function LoginPage() {
   }, []);
 
   const handleInviteToken = async (token: string, newUserId: string) => {
-    // トークンを検索
     const { data: inviteData } = await supabase
       .from('invite_tokens')
       .select('*')
@@ -45,14 +42,12 @@ export default function LoginPage() {
 
     if (!inviteData) return;
 
-    // 友人関係を作成
     await supabase.from('friendships').insert({
       requester_id: inviteData.inviter_id,
       receiver_id: newUserId,
-      status: 'accepted', // 招待経由は自動承認
+      status: 'accepted',
     });
 
-    // トークンを使用済みにする
     await supabase.from('invite_tokens')
       .update({ used_at: new Date().toISOString() })
       .eq('id', inviteData.id);
@@ -70,7 +65,7 @@ export default function LoginPage() {
         await supabase.from('profiles').insert({
           id: data.user.id,
           name,
-          email, // emailも保存
+          email,
         });
         setMessage('確認メールを送信しました。メールを確認してください。');
       }
@@ -86,74 +81,75 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#08080F] text-[#EEEEF8] flex flex-col items-center justify-center px-5">
+    <div style={{ minHeight: '100vh', background: '#F0EFF8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 1.25rem', fontFamily: "'Space Grotesk', sans-serif" }}>
 
-      {/* Logo */}
-      <div className="mb-10 text-center">
-        <h1 className="text-4xl font-bold text-[#C5FF47] tracking-tight mb-4">RunPlan</h1>
-        <p className="text-base font-semibold text-[#EEEEF8] leading-relaxed">ゴールまでの道を、みんなでつくる</p>
-        <p className="text-base font-semibold text-[#C5FF47] leading-relaxed">さあ、今日も一歩</p>
+      {/* ロゴ */}
+      <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+        <img src="/logo.png" alt="RunPlan" style={{ height: 80, objectFit: 'contain' }}/>
+        <p style={{ fontSize: '.95rem', fontWeight: 600, color: '#1A1A2E', marginTop: '.75rem', lineHeight: 1.6 }}>ゴールまでの道を、みんなでつくる</p>
+        <p style={{ fontSize: '.95rem', fontWeight: 600, color: '#FF3B8B', lineHeight: 1.6 }}>さあ、今日も一歩</p>
       </div>
 
-      {/* Card */}
-      <div className="w-full max-w-sm bg-[rgba(26,26,40,0.85)] border border-white/10 rounded-2xl p-6">
+      {/* カード */}
+      <div style={{ width: '100%', maxWidth: 400, background: 'white', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 24, padding: '1.5rem', boxShadow: '0 4px 24px rgba(255,59,139,0.08)' }}>
 
-        {/* Tab */}
-        <div className="flex gap-2 mb-6">
+        {/* タブ */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: '1.5rem' }}>
           {[
-            { id: 'login',  label: 'ログイン' },
+            { id: 'login', label: 'ログイン' },
             { id: 'signup', label: '新規登録' },
           ].map(t => (
             <button key={t.id} onClick={() => { setMode(t.id as any); setMessage(''); }}
-              className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                mode === t.id
-                  ? 'bg-[rgba(197,255,71,0.1)] text-[#C5FF47] border-[rgba(197,255,71,0.3)]'
-                  : 'bg-transparent text-[#7777A0] border-white/10'
-              }`}>
+              style={{
+                flex: 1, padding: '8px 0', borderRadius: 12, fontSize: '.875rem', fontWeight: 700, border: '1px solid', cursor: 'pointer', transition: 'all 0.2s',
+                background: mode === t.id ? 'rgba(255,59,139,0.08)' : 'transparent',
+                color: mode === t.id ? '#FF3B8B' : '#A0A0BE',
+                borderColor: mode === t.id ? 'rgba(255,59,139,0.3)' : 'rgba(0,0,0,0.08)',
+              }}>
               {t.label}
             </button>
           ))}
         </div>
 
-        {/* Form */}
-        <div className="flex flex-col gap-4">
+        {/* フォーム */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {mode === 'signup' && (
             <div>
-              <p className="text-xs text-[#7777A0] mb-1.5 font-semibold">名前</p>
+              <p style={{ fontSize: '.75rem', color: '#A0A0BE', marginBottom: 6, fontWeight: 700 }}>名前</p>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="山田太郎"
-                className="w-full bg-[rgba(26,26,40,0.9)] border border-white/10 rounded-xl px-4 py-3 text-sm outline-none text-[#EEEEF8] placeholder-[#44445A]"
+                style={{ width: '100%', background: '#F0EFF8', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 12, padding: '12px 16px', fontSize: '.875rem', outline: 'none', color: '#1A1A2E', boxSizing: 'border-box' }}
               />
             </div>
           )}
 
           <div>
-            <p className="text-xs text-[#7777A0] mb-1.5 font-semibold">メールアドレス</p>
+            <p style={{ fontSize: '.75rem', color: '#A0A0BE', marginBottom: 6, fontWeight: 700 }}>メールアドレス</p>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="example@email.com"
-              className="w-full bg-[rgba(26,26,40,0.9)] border border-white/10 rounded-xl px-4 py-3 text-sm outline-none text-[#EEEEF8] placeholder-[#44445A]"
+              style={{ width: '100%', background: '#F0EFF8', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 12, padding: '12px 16px', fontSize: '.875rem', outline: 'none', color: '#1A1A2E', boxSizing: 'border-box' }}
             />
           </div>
 
           <div>
-            <p className="text-xs text-[#7777A0] mb-1.5 font-semibold">パスワード</p>
+            <p style={{ fontSize: '.75rem', color: '#A0A0BE', marginBottom: 6, fontWeight: 700 }}>パスワード</p>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="8文字以上"
-              className="w-full bg-[rgba(26,26,40,0.9)] border border-white/10 rounded-xl px-4 py-3 text-sm outline-none text-[#EEEEF8] placeholder-[#44445A]"
+              style={{ width: '100%', background: '#F0EFF8', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 12, padding: '12px 16px', fontSize: '.875rem', outline: 'none', color: '#1A1A2E', boxSizing: 'border-box' }}
             />
           </div>
 
           {message && (
-            <p className={`text-xs text-center ${message.includes('送信') ? 'text-[#C5FF47]' : 'text-[#FF4D6A]'}`}>
+            <p style={{ fontSize: '.75rem', textAlign: 'center', color: message.includes('送信') ? '#5D9E3F' : '#FF4D6A' }}>
               {message}
             </p>
           )}
@@ -161,11 +157,16 @@ export default function LoginPage() {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#C5FF47] to-[#A0E030] text-[#08080F] font-bold text-base disabled:opacity-50">
+            style={{ width: '100%', padding: '14px 0', borderRadius: 16, background: 'linear-gradient(90deg, #FF3B8B, #FF6B9D)', color: 'white', fontWeight: 700, fontSize: '1rem', border: 'none', cursor: 'pointer', opacity: loading ? 0.5 : 1, boxShadow: '0 4px 16px rgba(255,59,139,0.3)' }}>
             {loading ? '処理中...' : mode === 'login' ? 'ログイン' : 'アカウントを作成'}
           </button>
         </div>
       </div>
+
+      {/* LPへのリンク */}
+      <a href="/lp" style={{ marginTop: '1.5rem', fontSize: '.8rem', color: '#A0A0BE', textDecoration: 'none' }}>
+        RunPlanについて詳しく見る →
+      </a>
     </div>
   );
 }
