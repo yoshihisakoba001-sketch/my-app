@@ -59,7 +59,7 @@ export default function CalendarPage() {
   }, [viewDate]);
 
   const doneKm = runs.reduce((sum, r) => sum + (r.distance || 0), 0);
-  const monthlyTargetKm = plans.reduce((sum, p) => sum + (p.target_km || 0), 0) || 42;
+  const monthlyTargetKm = plans.reduce((sum, p) => sum + (p.target_km || 0), 0);
   const pct = monthlyTargetKm > 0 ? Math.round((doneKm / monthlyTargetKm) * 100) : 0;
 
   const runMap: Record<number, any> = {};
@@ -121,6 +121,7 @@ export default function CalendarPage() {
       </div>
 
       <div className="px-5 pt-3">
+        {monthlyTargetKm > 0 && (
         <ProgressBar
           value={Math.round(doneKm * 10) / 10}
           max={monthlyTargetKm}
