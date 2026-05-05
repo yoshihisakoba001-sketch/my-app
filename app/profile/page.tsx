@@ -171,7 +171,7 @@ export default function ProfilePage() {
       token,
       inviter_id: userId,
     });
-    const url = `${window.location.origin}/invite?token=${token}`;
+    const url = `${window.location.origin}/lp?token=${token}`;
     setInviteUrl(url);
   };
 

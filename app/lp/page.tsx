@@ -193,6 +193,13 @@ export default function LandingPage() {
   const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+  // 招待tokenをlocalStorageに保存
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+  if (token) {
+    localStorage.setItem('invite_token', token);
+  }
+  
     animRef.current = setInterval(() => {
       setFadeIn(false);
       setTimeout(() => {

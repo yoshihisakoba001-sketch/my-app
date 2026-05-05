@@ -10,15 +10,17 @@ export default function InvitePage() {
   useEffect(() => {
     const token = searchParams.get('token');
     if (token) {
-      // tokenをlocalStorageに保存してからサインアップへ
+      // tokenをlocalStorageに保存してからLPへ
       localStorage.setItem('invite_token', token);
+      router.push(`/lp?token=${token}`);
+    } else {
+      router.push('/lp');
     }
-    router.push('/login?mode=signup');
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#08080F' }}>
-      <p style={{ color: '#C5FF47' }}>招待リンクを処理中...</p>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F0EFF8' }}>
+      <p style={{ color: '#FF3B8B' }}>招待リンクを処理中...</p>
     </div>
   );
 }
