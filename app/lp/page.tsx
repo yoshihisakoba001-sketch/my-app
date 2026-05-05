@@ -369,27 +369,32 @@ export default function LandingPage() {
         <p style={{ fontSize: '.72rem', color: '#44445A', marginTop: '.75rem' }}>クレジットカード不要・1分で完了</p>
       </section>
 
-      {/* FAQ */}
-      <section style={{ padding: '3rem 1.5rem 4rem', background: '#F0EFF8' }}>
-        <p style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.15em', color: '#FF3B8B', marginBottom: '.75rem', textTransform: 'uppercase' }}>FAQ</p>
+     {/* FAQ */}
+     <section style={{ padding: '3rem 1.5rem 4rem', background: '#F0EFF8' }}>
+       <p style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.15em', color: '#FF3B8B', marginBottom: '.75rem', textTransform: 'uppercase' }}>FAQ</p>
         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '1.5rem', color: '#1A1A2E', letterSpacing: '-0.02em' }}>よくある質問</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
-          {faqs.map((faq, i) => (
-            <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-              <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                style={{ width: '100%', padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-                <span style={{ fontSize: '.875rem', fontWeight: 700, color: '#1A1A2E', flex: 1, paddingRight: '1rem' }}>{faq.q}</span>
-                <span style={{ color: '#FF3B8B', fontSize: '1.2rem', flexShrink: 0, display: 'inline-block', transform: openFaq === i ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s ease' }}>+</span>
-              </button>
-              {openFaq === i && (
-                <div style={{ padding: '0 1.25rem 1rem', fontSize: '.875rem', color: '#6B6B8A', lineHeight: 1.7, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                  {faq.a}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+       <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
+         {faqs.map((faq, i) => (
+           <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+             <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
+               style={{ width: '100%', padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+               <span style={{ fontSize: '.875rem', fontWeight: 700, color: '#1A1A2E', flex: 1, paddingRight: '1rem' }}>{faq.q}</span>
+               <span style={{ color: '#FF3B8B', fontSize: '1.2rem', flexShrink: 0, display: 'inline-block', transform: openFaq === i ? 'rotate(45deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}>+</span>
+             </button>
+             <div style={{
+               maxHeight: openFaq === i ? 200 : 0,
+               overflow: 'hidden',
+               transition: 'max-height 0.3s ease',
+             }}>
+               <div style={{ padding: '1rem 1.25rem', fontSize: '.875rem', color: '#6B6B8A', lineHeight: 1.7, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                 {faq.a}
+               </div>
+              </div>
+           </div>
+        ))}
+       </div>
       </section>
+
 
       {/* Footer */}
       <footer style={{ padding: '1.5rem', textAlign: 'center', background: '#1A1A2E', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
