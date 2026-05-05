@@ -120,22 +120,23 @@ export default function CalendarPage() {
         ))}
       </div>
 
-      <div className="px-5 pt-3">
-        {monthlyTargetKm > 0 && (
-        <ProgressBar
-          value={Math.round(doneKm * 10) / 10}
-          max={monthlyTargetKm}
-          unit="km"
-          label="月間達成率"
-          showLv={true}
-          milestones={[
-            { value: Math.round(monthlyTargetKm * 0.25), icon: '⭐' },
-            { value: Math.round(monthlyTargetKm * 0.5),  icon: '🏃' },
-            { value: Math.round(monthlyTargetKm * 0.75), icon: '🌟' },
-            { value: monthlyTargetKm, icon: '🏆' },
-          ]}
-        />
-      </div>
+     <div className="px-5 pt-3">
+  {monthlyTargetKm > 0 && (
+    <ProgressBar
+      value={Math.round(doneKm * 10) / 10}
+      max={monthlyTargetKm}
+      unit="km"
+      label="月間達成率"
+      showLv={true}
+      milestones={[
+        { value: Math.round(monthlyTargetKm * 0.25), icon: '⭐' },
+        { value: Math.round(monthlyTargetKm * 0.5),  icon: '🏃' },
+        { value: Math.round(monthlyTargetKm * 0.75), icon: '🌟' },
+        { value: monthlyTargetKm, icon: '🏆' },
+      ]}
+    />
+  )}
+</div>
 
       <div className="px-5 pt-4">
         <div className="grid grid-cols-7 mb-2">
