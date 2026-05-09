@@ -1,14 +1,33 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const handleCallback = async () => {
+      const token_hash = searchParams.get('token_hash');
+      const type = searchParams.get('type');
+
+      // token_hashがある場合はメール認証を処理
+      if (token_hash && type) {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash,
+          type: type as any,
+        });
+
+        if (error) {
+          console.error('認証エラー:', error);
+          router.push('/login?error=auth');
+          return;
+        }
+      }
+
+      // セッション取得後にinvite_tokenを処理
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session) {
@@ -18,6 +37,7 @@ export default function AuthCallbackPage() {
           localStorage.removeItem('invite_token');
         }
       }
+
       router.push('/');
     };
 
