@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 
 // ===== マイタウン SVG =====
 const DayTownSVG = ({ km }: { km: number }) => (
@@ -26,7 +28,6 @@ const DayTownSVG = ({ km }: { km: number }) => (
     {[20,60,100,140,180,220,260,300,340].map(x => (
       <rect key={x} x={x} y={139} width={20} height={2} fill="white" opacity="0.5"/>
     ))}
-    {/* 建物1 */}
     <rect x="4" y="92" width="28" height="38" fill="#F0F0F0" rx="2"/>
     <rect x="4" y="86" width="28" height="8" fill="#E0E0E0" rx="2"/>
     <rect x="9" y="96" width="7" height="8" fill="#87CEEB" opacity="0.8"/>
@@ -34,14 +35,12 @@ const DayTownSVG = ({ km }: { km: number }) => (
     <rect x="9" y="108" width="7" height="8" fill="#87CEEB" opacity="0.8"/>
     <rect x="20" y="108" width="7" height="8" fill="#87CEEB" opacity="0.8"/>
     <rect x="13" y="118" width="10" height="12" fill="#8D6E63" rx="1"/>
-    {/* 建物2: 赤茶色ビル */}
     <rect x="36" y="65" width="30" height="65" fill="#C0392B" rx="2"/>
     <rect x="36" y="60" width="30" height="7" fill="#A93226" rx="1"/>
     {[0,1,2].map(col => [0,1,2,3,4].map(row => (
       <rect key={`b2-${col}-${row}`} x={40+col*9} y={68+row*12} width={6} height={8} fill="#FFE0B2" opacity={0.85}/>
     )))}
     <rect x="48" y="120" width="8" height="10" fill="#5D4037" rx="1"/>
-    {/* 建物3: 灰色高層ビル */}
     <rect x="70" y="40" width="35" height="90" fill="#9E9E9E" rx="2"/>
     <rect x="70" y="35" width="35" height="7" fill="#757575" rx="1"/>
     <rect x="83" y="28" width="3" height="9" fill="#616161"/>
@@ -49,7 +48,6 @@ const DayTownSVG = ({ km }: { km: number }) => (
     {[0,1].map(col => [0,1,2,3,4,5,6].map(row => (
       <rect key={`b3-${col}-${row}`} x={74+col*16} y={44+row*12} width={10} height={8} fill="#B3E5FC" opacity={0.8}/>
     )))}
-    {/* 建物4: 青いオフィスビル */}
     <rect x="140" y="25" width="42" height="105" fill="#42A5F5" rx="2"/>
     <rect x="140" y="20" width="42" height="7" fill="#1E88E5" rx="1"/>
     <rect x="155" y="13" width="5" height="9" fill="#1565C0"/>
@@ -57,24 +55,20 @@ const DayTownSVG = ({ km }: { km: number }) => (
     {[0,1].map(col => [0,1,2,3,4,5,6,7].map(row => (
       <rect key={`b4-${col}-${row}`} x={145+col*18} y={28+row*12} width={13} height={8} fill="white" opacity={0.3}/>
     )))}
-    {/* 建物5: オレンジビル */}
     <rect x="190" y="60" width="28" height="70" fill="#FF8F00" rx="2"/>
     <rect x="190" y="55" width="28" height="7" fill="#E65100" rx="1"/>
     {[0,1].map(col => [0,1,2,3,4].map(row => (
       <rect key={`b5-${col}-${row}`} x={194+col*13} y={63+row*12} width={9} height={8} fill="#FFF9C4" opacity={0.8}/>
     )))}
     <rect x="200" y="120" width="10" height="10" fill="#5D4037" rx="1"/>
-    {/* 建物6: 青緑ビル */}
     <rect x="222" y="38" width="36" height="92" fill="#26C6DA" rx="2"/>
     <rect x="222" y="33" width="36" height="7" fill="#00ACC1" rx="1"/>
     {[0,1].map(col => [0,1,2,3,4,5,6].map(row => (
       <rect key={`b6-${col}-${row}`} x={226+col*15} y={40+row*12} width={11} height={8} fill="white" opacity={0.3}/>
     )))}
-    {/* 木（50km以上） */}
     {km >= 50 && (
       <><rect x="109" y="120" width="5" height="10" fill="#5D4037"/><circle cx="111" cy="113" r="9" fill="#388E3C"/><circle cx="111" cy="113" r="6" fill="#43A047"/></>
     )}
-    {/* スタジアム（300km） */}
     {km >= 300 ? (
       <><ellipse cx="338" cy="116" rx="20" ry="12" fill="#81C784" stroke="#4CAF50" strokeWidth="1.5"/><ellipse cx="338" cy="116" rx="13" ry="7" fill="#A5D6A7"/><ellipse cx="338" cy="116" rx="6" ry="3" fill="#66BB6A"/><text x="338" y="119" textAnchor="middle" fontSize="5" fill="#1B5E20" fontFamily="sans-serif" fontWeight="bold">STADIUM</text></>
     ) : (
@@ -86,27 +80,13 @@ const DayTownSVG = ({ km }: { km: number }) => (
 // ===== スマホモックアップ =====
 const PhoneMockup = () => (
   <div style={{ width: 260, flexShrink: 0, background: '#1A1A2E', borderRadius: 40, border: '6px solid #1A1A2E', boxShadow: '0 32px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-    {/* ステータスバー */}
     <div style={{ background: '#1A1A2E', height: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' }}>
       <span style={{ fontSize: 10, color: 'white', fontWeight: 700 }}>9:41</span>
       <div style={{ width: 72, height: 10, background: '#0A0A1A', borderRadius: 100 }}/>
       <span style={{ fontSize: 10, color: 'white', fontWeight: 700 }}>100%</span>
     </div>
-
-    {/* ホーム画面スクリーンショット（上部をトリミングして表示） */}
     <div style={{ width: '100%', height: 520, overflow: 'hidden', position: 'relative' }}>
-      <img
-        src="/home-screen.png"
-        alt="RunPlanホーム画面"
-        style={{
-          width: '100%',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          objectFit: 'cover',
-          objectPosition: 'top',
-        }}
-      />
+      <img src="/home-screen.png" alt="RunPlanホーム画面" style={{ width: '100%', position: 'absolute', top: 0, left: 0, objectFit: 'cover', objectPosition: 'top' }}/>
     </div>
   </div>
 );
@@ -187,19 +167,28 @@ const SCENES = [
 
 // ===== メインコンポーネント =====
 export default function LandingPage() {
+  const router = useRouter();
+
+  const handleSignup = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      localStorage.setItem('invite_token', token);
+    }
+    router.push('/login?mode=signup');
+  };
+
   const [scene, setScene] = useState(0);
   const [fadeIn, setFadeIn] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-  // 招待tokenをlocalStorageに保存
-  const urlParams = new URLSearchParams(window.location.search);
-  const token = urlParams.get('token');
-  if (token) {
-    localStorage.setItem('invite_token', token);
-  }
-  
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      localStorage.setItem('invite_token', token);
+    }
     animRef.current = setInterval(() => {
       setFadeIn(false);
       setTimeout(() => {
@@ -235,17 +224,16 @@ export default function LandingPage() {
     { icon: '🏙️', title: 'マイタウン', desc: '走るたびに街が育つ。累計距離に応じて新しい施設がアンロックされる。', color: '#26C6DA', bg: 'rgba(38,198,218,0.08)' },
   ];
 
-
   return (
     <div style={{ background: '#F0EFF8', color: '#1A1A2E', fontFamily: "'Space Grotesk', sans-serif", minHeight: '100vh' }}>
-        <style>{`.fixed.bottom-24.right-5 { display: none !important; }`}</style>
+      <style>{`.fixed.bottom-24.right-5 { display: none !important; }`}</style>
 
       {/* Nav */}
       <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '.75rem 1.5rem', background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(0,0,0,0.06)', position: 'sticky', top: 0, zIndex: 100 }}>
         <img src="/logo.png" alt="RunPlan" style={{ height: 40, objectFit: 'contain', objectPosition: 'left center' }}/>
-        <a href="/login" style={{ background: 'linear-gradient(90deg,#FF3B8B,#FF6B9D)', color: 'white', fontWeight: 700, fontSize: '.8rem', padding: '9px 20px', borderRadius: '100px', textDecoration: 'none', boxShadow: '0 2px 12px rgba(255,59,139,0.3)', flexShrink: 0 }}>
+        <button onClick={handleSignup} style={{ background: 'linear-gradient(90deg,#FF3B8B,#FF6B9D)', color: 'white', fontWeight: 700, fontSize: '.8rem', padding: '9px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', boxShadow: '0 2px 12px rgba(255,59,139,0.3)', flexShrink: 0 }}>
           無料で始める
-        </a>
+        </button>
       </nav>
 
       {/* Hero */}
@@ -261,12 +249,10 @@ export default function LandingPage() {
           AIコーチが、あなただけのトレーニング計画を作成。<br/>
           仲間の頑張りが、あなたを動かす。
         </p>
-        <a href="/login" style={{ display: 'inline-block', background: 'linear-gradient(90deg,#FF3B8B,#FF6B9D)', color: 'white', fontWeight: 700, fontSize: '1rem', padding: '14px 36px', borderRadius: '100px', textDecoration: 'none', boxShadow: '0 4px 20px rgba(255,59,139,0.35)' }}>
+        <button onClick={handleSignup} style={{ display: 'inline-block', background: 'linear-gradient(90deg,#FF3B8B,#FF6B9D)', color: 'white', fontWeight: 700, fontSize: '1rem', padding: '14px 36px', borderRadius: '100px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(255,59,139,0.35)' }}>
           無料でアカウントを作成
-        </a>
+        </button>
         <p style={{ fontSize: '.72rem', color: '#A0A0BE', marginTop: '.6rem', marginBottom: '3rem' }}>クレジットカード不要・1分で完了</p>
-
-        {/* スマホモックアップ */}
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <PhoneMockup/>
         </div>
@@ -278,7 +264,6 @@ export default function LandingPage() {
         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '2rem', color: 'white', letterSpacing: '-0.02em' }}>
           ランニングが、<span style={{ color: '#FF3B8B' }}>ゲームになる。</span>
         </h2>
-
         <div style={{ opacity: fadeIn ? 1 : 0, transition: 'opacity 0.4s ease' }}>
           <div style={{ background: '#F0EFF8', borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1.5rem' }}>
             {scene === 0 && <CoachScreen/>}
@@ -290,7 +275,6 @@ export default function LandingPage() {
           </h3>
           <p style={{ fontSize: '.875rem', color: '#7777A0' }}>{SCENES[scene].desc}</p>
         </div>
-
         <div style={{ display: 'flex', gap: 8, marginTop: '1.5rem' }}>
           {SCENES.map((_, i) => (
             <div key={i} onClick={() => { setScene(i); setFadeIn(true); }}
@@ -346,9 +330,6 @@ export default function LandingPage() {
         <p style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.15em', color: '#FF3B8B', marginBottom: '.75rem', textTransform: 'uppercase' }}>For you</p>
         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '.5rem', color: '#1A1A2E', letterSpacing: '-0.02em' }}>こんな人におすすめ</h2>
         <p style={{ fontSize: '.875rem', color: '#6B6B8A', marginBottom: '1.5rem', lineHeight: 1.7 }}>月間50〜100kmを走り、仲間とマラソンを目指すシティランナーのために作りました。</p>
-
-
-
         <div style={{ background: 'white', borderRadius: 16, padding: '1.25rem', border: '1px solid rgba(0,0,0,0.06)' }}>
           {targets.map((t, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '.625rem 0', borderBottom: i < targets.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
@@ -370,38 +351,33 @@ export default function LandingPage() {
         <p style={{ fontSize: '.875rem', color: '#7777A0', marginBottom: '1.5rem', lineHeight: 1.7 }}>
           無料でアカウントを作成して、<br/>AIコーチと最初の一歩を踏み出す。
         </p>
-        <a href="/login" style={{ display: 'inline-block', background: 'linear-gradient(90deg,#FF3B8B,#FF6B9D)', color: 'white', fontWeight: 700, fontSize: '1rem', padding: '16px 40px', borderRadius: '100px', textDecoration: 'none', boxShadow: '0 4px 20px rgba(255,59,139,0.4)' }}>
+        <button onClick={handleSignup} style={{ display: 'inline-block', background: 'linear-gradient(90deg,#FF3B8B,#FF6B9D)', color: 'white', fontWeight: 700, fontSize: '1rem', padding: '16px 40px', borderRadius: '100px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(255,59,139,0.4)' }}>
           無料で始める →
-        </a>
+        </button>
         <p style={{ fontSize: '.72rem', color: '#44445A', marginTop: '.75rem' }}>クレジットカード不要・1分で完了</p>
       </section>
 
-     {/* FAQ */}
-     <section style={{ padding: '3rem 1.5rem 4rem', background: '#F0EFF8' }}>
-       <p style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.15em', color: '#FF3B8B', marginBottom: '.75rem', textTransform: 'uppercase' }}>FAQ</p>
+      {/* FAQ */}
+      <section style={{ padding: '3rem 1.5rem 4rem', background: '#F0EFF8' }}>
+        <p style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.15em', color: '#FF3B8B', marginBottom: '.75rem', textTransform: 'uppercase' }}>FAQ</p>
         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '1.5rem', color: '#1A1A2E', letterSpacing: '-0.02em' }}>よくある質問</h2>
-       <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
-         {faqs.map((faq, i) => (
-           <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-             <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
-               style={{ width: '100%', padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-               <span style={{ fontSize: '.875rem', fontWeight: 700, color: '#1A1A2E', flex: 1, paddingRight: '1rem' }}>{faq.q}</span>
-               <span style={{ color: '#FF3B8B', fontSize: '1.2rem', flexShrink: 0, display: 'inline-block', transform: openFaq === i ? 'rotate(45deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}>+</span>
-             </button>
-             <div style={{
-               maxHeight: openFaq === i ? 200 : 0,
-               overflow: 'hidden',
-               transition: 'max-height 0.3s ease',
-             }}>
-               <div style={{ padding: '1rem 1.25rem', fontSize: '.875rem', color: '#6B6B8A', lineHeight: 1.7, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                 {faq.a}
-               </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
+          {faqs.map((faq, i) => (
+            <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+              <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                style={{ width: '100%', padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                <span style={{ fontSize: '.875rem', fontWeight: 700, color: '#1A1A2E', flex: 1, paddingRight: '1rem' }}>{faq.q}</span>
+                <span style={{ color: '#FF3B8B', fontSize: '1.2rem', flexShrink: 0, display: 'inline-block', transform: openFaq === i ? 'rotate(45deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}>+</span>
+              </button>
+              <div style={{ maxHeight: openFaq === i ? 200 : 0, overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
+                <div style={{ padding: '1rem 1.25rem', fontSize: '.875rem', color: '#6B6B8A', lineHeight: 1.7, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                  {faq.a}
+                </div>
               </div>
-           </div>
-        ))}
-       </div>
+            </div>
+          ))}
+        </div>
       </section>
-
 
       {/* Footer */}
       <footer style={{ padding: '1.5rem', textAlign: 'center', background: '#1A1A2E', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
