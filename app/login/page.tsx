@@ -18,40 +18,7 @@ export default function LoginPage() {
     if (searchParams.get('mode') === 'signup') {
       setMode('signup');
     }
-
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        const inviteToken = localStorage.getItem('invite_token');
-        if (inviteToken) {
-          await handleInviteToken(inviteToken, session.user.id);
-          localStorage.removeItem('invite_token');
-        }
-        router.push('/');
-      }
-    });
   }, []);
-
-  const handleInviteToken = async (token: string, newUserId: string) => {
-    const { data: inviteData } = await supabase
-      .from('invite_tokens')
-      .select('*')
-      .eq('token', token)
-      .is('used_at', null)
-      .gte('expires_at', new Date().toISOString())
-      .single();
-
-    if (!inviteData) return;
-
-    await supabase.from('friendships').insert({
-      requester_id: inviteData.inviter_id,
-      receiver_id: newUserId,
-      status: 'accepted',
-    });
-
-    await supabase.from('invite_tokens')
-      .update({ used_at: new Date().toISOString() })
-      .eq('id', inviteData.id);
-  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -62,10 +29,12 @@ export default function LoginPage() {
       if (error) {
         setMessage(error.message);
       } else if (data.user) {
+        const inviteToken = localStorage.getItem('invite_token');
         await supabase.from('profiles').insert({
           id: data.user.id,
           name,
           email,
+          pending_invite_token: inviteToken || null,
         });
         setMessage('確認メールを送信しました。メールを確認してください。');
       }
