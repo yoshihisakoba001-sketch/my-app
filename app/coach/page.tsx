@@ -89,10 +89,11 @@ export default function CoachPage() {
 
       if (userId) {
         if (data.raceData) {
-            await supabase.from('races').upsert(
-            { user_id: userId, ...data.raceData },
-            { onConflict: 'user_id,name' }
-          );
+              console.log('raceData:', data.raceData);
+              const result = await supabase.from('races').upsert(
+                    { user_id: userId, ...data.raceData },
+                    { onConflict: 'user_id,name' }
+             );
         }
         if (data.planData) {
           const plansWithUserId = data.planData.map((p: any) => ({ ...p, user_id: userId }));
