@@ -30,14 +30,9 @@ export default function LoginPage() {
         setMessage(error.message);
       } else if (data.user) {
         const inviteToken = localStorage.getItem('invite_token');
-        await supabase.from('profiles').insert({
-          id: data.user.id,
-          name,
-          email,
-          pending_invite_token: inviteToken || null,
-        });
+        localStorage.setItem('pending_name', name); 
         setMessage('確認メールを送信しました。メールを確認してください。');
-      }
+    }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
