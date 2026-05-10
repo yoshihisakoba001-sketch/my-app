@@ -31,31 +31,31 @@ export default function AuthCallbackPage() {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session) {
-          // profileが存在しない場合は作成
-          //   const { data: existingProfile } = await supabase
-          //     .from('profiles')
-          //     .select('id')
-          //     .eq('id', session.user.id)
-          //     .maybeSingle();
-          
-          if (!existingProfile) {
-                const pendingName = localStorage.getItem('pending_name') || '';
-                await supabase.from('profiles').insert({
-                   id: session.user.id,
-                   email: session.user.email,
-                   name: pendingName,
-                   pending_invite_token: localStorage.getItem('invite_token') || null,
-                });
-                localStorage.removeItem('pending_name');
-            }
-            
-    　　　// invite_token処理
-      const inviteToken = localStorage.getItem('invite_token');
-      if (inviteToken) {
-         await handleInviteToken(inviteToken, session.user.id);
-         localStorage.removeItem('invite_token');
-      }
-    }
+  // profileが存在しない場合は作成
+  const { data: existingProfile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (!existingProfile) {
+    const pendingName = localStorage.getItem('pending_name') || '';
+    await supabase.from('profiles').insert({
+      id: session.user.id,
+      email: session.user.email,
+      name: pendingName,
+      pending_invite_token: localStorage.getItem('invite_token') || null,
+    });
+    localStorage.removeItem('pending_name');
+  }
+
+  // invite_token処理
+  const inviteToken = localStorage.getItem('invite_token');
+  if (inviteToken) {
+    await handleInviteToken(inviteToken, session.user.id);
+    localStorage.removeItem('invite_token');
+  }
+}
 
       router.push('/');
     };
