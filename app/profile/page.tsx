@@ -364,6 +364,16 @@ export default function ProfilePage() {
             style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
             戻る
           </button>
+
+          <button onClick={async () => {
+              await supabase.auth.signOut();
+                router.push('/login');
+            }}
+              className="w-full py-3 rounded-2xl text-sm border"
+                style={{ borderColor: 'rgba(255,77,106,0.3)', color: '#FF4D6A' }}>
+                      ログアウト
+            </button>
+
         </div>
       )}
 
