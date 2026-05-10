@@ -366,9 +366,9 @@ export default function SocialPage() {
             {friendIds.length > 0 ? `友人${friendIds.length}人と一緒に走っています` : '友人を追加してみましょう'}
           </p>
         </div>
-        <a href="/profile" className="text-xs px-3 py-1.5 rounded-full font-semibold border"
-          style={{ background: 'var(--accent-bg)', color: 'var(--accent)', borderColor: 'var(--border-accent)' }}>
-          👤 マイページ
+        <a href="/profile?tab=friends" className="text-xs px-3 py-1.5 rounded-full font-semibold border"
+        style={{ background: 'var(--accent-bg)', color: 'var(--accent)', borderColor: 'var(--border-accent)' }}>
+        👥 友達管理
         </a>
       </div>
 

@@ -254,7 +254,10 @@ export default function Home() {
           <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
             🏆 {race ? race.name : '大会を設定してください'}
           </span>
-          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{race ? race.distance : ''}</span>
+              <a href="/profile" className="text-xs px-3 py-1.5 rounded-full font-semibold border"
+              style={{ background: 'var(--accent-bg)', color: 'var(--accent)', borderColor: 'var(--border-accent)' }}>
+              👤 マイページ
+              </a>
         </div>
         <div className="flex items-baseline gap-2 mb-1">
           <span className="text-7xl font-bold leading-none tracking-tight" style={{ color: 'var(--accent)' }}>

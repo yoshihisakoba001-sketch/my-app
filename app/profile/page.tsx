@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../components/ThemeContext';
+import { useRouter } from 'next/navigation';
 
 const ICON_CATEGORIES = [
   {
@@ -83,6 +83,12 @@ export default function ProfilePage() {
       if (profile?.icon) setSelectedIcon(profile.icon);
     };
     fetchProfile();
+
+    // URLパラメータでタブを初期設定
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('tab') === 'friends') {
+      setTab('friends');
+    }
   }, []);
 
   useEffect(() => {
@@ -95,10 +101,11 @@ export default function ProfilePage() {
     if (!userId) return;
     setFriendsLoading(true);
 
+
     // 友人一覧取得
     const { data: friendships } = await supabase
       .from('friendships')
-      .select('*')
+      .select('*')  
       .eq('status', 'accepted')
       .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
 
@@ -352,7 +359,7 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          <button onClick={() => router.push('/social')}
+          <button onClick={() => router.push('/')}
             className="w-full py-3 rounded-2xl text-sm border"
             style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
             戻る
@@ -485,6 +492,14 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
+
+          {/* 戻るボタン */}
+         <button onClick={() => router.push('/social')}
+          className="w-full py-3 rounded-2xl text-sm border"
+          style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+            ← 戻る
+            </button>
+
 
         </div>
       )}
