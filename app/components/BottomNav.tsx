@@ -7,7 +7,7 @@ import { useTheme } from './ThemeContext';
 const tabs = [
   { id: 'home',     href: '/',         icon: '🏠', label: 'ホーム' },
   { id: 'calendar', href: '/calendar', icon: '📅', label: 'カレンダー' },
-  { id: 'record',   href: '/record',   icon: '➕', label: '記録',  fab: true },
+  { id: 'coach',    href: '/coach',    icon: '🏃', label: 'AIコーチ', fab: true },
   { id: 'town',     href: '/town',     icon: '🗺️', label: 'マイタウン' },
   { id: 'social',   href: '/social',   icon: '👥', label: 'ソーシャル' },
 ];
@@ -29,7 +29,7 @@ export default function BottomNav() {
                   : 'linear-gradient(135deg, #FF3B8B, #FF6B9D)',
                 boxShadow: isDark ? '0 4px 15px rgba(197,255,71,0.4)' : '0 4px 15px rgba(255,59,139,0.4)',
               }}>
-              <span className="text-2xl">➕</span>
+              <span className="text-2xl">🏃</span>
             </div>
           ) : (
             <>

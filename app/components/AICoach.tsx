@@ -98,16 +98,7 @@ export default function AICoach() {
 
   return (
     <>
-      {/* Floating button */}
-      {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-24 right-5 w-14 h-14 rounded-full flex items-center justify-center text-2xl z-50 animate-pulse"
-          style={{ background: fabGradient, boxShadow: fabShadow }}
-        >
-          🏃
-        </button>
-      )}
+  
 
       {/* Modal */}
       {open && (
