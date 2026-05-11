@@ -52,8 +52,8 @@ export default function AuthCallbackPage() {
           localStorage.removeItem('pending_name');
         }
 
-        const inviteToken = localStorage.getItem('invite_token');
-        console.log('[callback] inviteToken from localStorage:', inviteToken);
+        const inviteToken = searchParams.get('invite_token') || localStorage.getItem('invite_token');
+        console.log('[callback] inviteToken:', inviteToken);
 
         if (inviteToken) {
           await handleInviteToken(inviteToken, session.user.id);

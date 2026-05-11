@@ -25,10 +25,14 @@ export default function LoginPage() {
     setMessage('');
 
     if (mode === 'signup') {
+      const inviteToken = localStorage.getItem('invite_token');
+      const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
+      if (inviteToken) callbackUrl.searchParams.set('invite_token', inviteToken);
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: callbackUrl.toString() },
       });
       if (error) {
         setMessage(error.message);
