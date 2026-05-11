@@ -30,16 +30,12 @@ export default function AuthCallbackPage() {
       // セッション取得後にinvite_tokenを処理
       const { data: { session } } = await supabase.auth.getSession();
 
-      console.log('[callback] session:', session?.user?.id);
-
       if (session) {
         const { data: existingProfile } = await supabase
           .from('profiles')
           .select('id')
           .eq('id', session.user.id)
           .maybeSingle();
-
-        console.log('[callback] existingProfile:', existingProfile);
 
         if (!existingProfile) {
           const pendingName = localStorage.getItem('pending_name') || '';
@@ -55,7 +51,6 @@ export default function AuthCallbackPage() {
         const inviteToken = (session.user.user_metadata?.invite_token as string | undefined)
           || searchParams.get('invite_token')
           || localStorage.getItem('invite_token');
-        console.log('[callback] inviteToken:', inviteToken);
 
         if (inviteToken) {
           await handleInviteToken(inviteToken, session.user.id);
@@ -67,9 +62,7 @@ export default function AuthCallbackPage() {
     };
 
     const handleInviteToken = async (token: string, newUserId: string) => {
-      console.log('[invite] token:', token, 'newUserId:', newUserId);
-
-      const { data: inviteData, error: tokenError } = await supabase
+      const { data: inviteData } = await supabase
         .from('invite_tokens')
         .select('*')
         .eq('token', token)
@@ -77,16 +70,13 @@ export default function AuthCallbackPage() {
         .gte('expires_at', new Date().toISOString())
         .single();
 
-      console.log('[invite] inviteData:', inviteData, 'tokenError:', tokenError);
       if (!inviteData) return;
 
-      const { error: friendshipError } = await supabase.from('friendships').insert({
+      await supabase.from('friendships').insert({
         requester_id: newUserId,
         receiver_id: inviteData.inviter_id,
         status: 'accepted',
       });
-
-      console.log('[invite] friendshipError:', friendshipError);
 
       await supabase.from('invite_tokens')
         .update({ used_at: new Date().toISOString() })
