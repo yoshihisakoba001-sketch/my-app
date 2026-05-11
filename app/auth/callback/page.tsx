@@ -81,8 +81,8 @@ export default function AuthCallbackPage() {
       if (!inviteData) return;
 
       const { error: friendshipError } = await supabase.from('friendships').insert({
-        requester_id: inviteData.inviter_id,
-        receiver_id: newUserId,
+        requester_id: newUserId,
+        receiver_id: inviteData.inviter_id,
         status: 'accepted',
       });
 
