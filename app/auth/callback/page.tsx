@@ -52,7 +52,9 @@ export default function AuthCallbackPage() {
           localStorage.removeItem('pending_name');
         }
 
-        const inviteToken = searchParams.get('invite_token') || localStorage.getItem('invite_token');
+        const inviteToken = (session.user.user_metadata?.invite_token as string | undefined)
+          || searchParams.get('invite_token')
+          || localStorage.getItem('invite_token');
         console.log('[callback] inviteToken:', inviteToken);
 
         if (inviteToken) {
