@@ -30,38 +30,44 @@ export default function AuthCallbackPage() {
       // セッション取得後にinvite_tokenを処理
       const { data: { session } } = await supabase.auth.getSession();
 
+      console.log('[callback] session:', session?.user?.id);
+
       if (session) {
-  // profileが存在しない場合は作成
-  const { data: existingProfile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('id', session.user.id)
-    .maybeSingle();
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', session.user.id)
+          .maybeSingle();
 
-  if (!existingProfile) {
-    const pendingName = localStorage.getItem('pending_name') || '';
-    await supabase.from('profiles').insert({
-      id: session.user.id,
-      email: session.user.email,
-      name: pendingName,
-      pending_invite_token: localStorage.getItem('invite_token') || null,
-    });
-    localStorage.removeItem('pending_name');
-  }
+        console.log('[callback] existingProfile:', existingProfile);
 
-  // invite_token処理
-  const inviteToken = localStorage.getItem('invite_token');
-  if (inviteToken) {
-    await handleInviteToken(inviteToken, session.user.id);
-    localStorage.removeItem('invite_token');
-  }
-}
+        if (!existingProfile) {
+          const pendingName = localStorage.getItem('pending_name') || '';
+          await supabase.from('profiles').insert({
+            id: session.user.id,
+            email: session.user.email,
+            name: pendingName,
+            pending_invite_token: localStorage.getItem('invite_token') || null,
+          });
+          localStorage.removeItem('pending_name');
+        }
+
+        const inviteToken = localStorage.getItem('invite_token');
+        console.log('[callback] inviteToken from localStorage:', inviteToken);
+
+        if (inviteToken) {
+          await handleInviteToken(inviteToken, session.user.id);
+          localStorage.removeItem('invite_token');
+        }
+      }
 
       router.push('/');
     };
 
     const handleInviteToken = async (token: string, newUserId: string) => {
-      const { data: inviteData } = await supabase
+      console.log('[invite] token:', token, 'newUserId:', newUserId);
+
+      const { data: inviteData, error: tokenError } = await supabase
         .from('invite_tokens')
         .select('*')
         .eq('token', token)
@@ -69,13 +75,16 @@ export default function AuthCallbackPage() {
         .gte('expires_at', new Date().toISOString())
         .single();
 
+      console.log('[invite] inviteData:', inviteData, 'tokenError:', tokenError);
       if (!inviteData) return;
 
-      await supabase.from('friendships').insert({
+      const { error: friendshipError } = await supabase.from('friendships').insert({
         requester_id: inviteData.inviter_id,
         receiver_id: newUserId,
         status: 'accepted',
       });
+
+      console.log('[invite] friendshipError:', friendshipError);
 
       await supabase.from('invite_tokens')
         .update({ used_at: new Date().toISOString() })
