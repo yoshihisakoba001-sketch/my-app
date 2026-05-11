@@ -25,14 +25,17 @@ export default function LoginPage() {
     setMessage('');
 
     if (mode === 'signup') {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
       if (error) {
         setMessage(error.message);
       } else if (data.user) {
-        const inviteToken = localStorage.getItem('invite_token');
-        localStorage.setItem('pending_name', name); 
+        localStorage.setItem('pending_name', name);
         setMessage('確認メールを送信しました。メールを確認してください。');
-    }
+      }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {

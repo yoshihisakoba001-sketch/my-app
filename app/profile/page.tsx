@@ -174,9 +174,11 @@ export default function ProfilePage() {
   const generateInviteUrl = async () => {
     if (!userId) return;
     const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await supabase.from('invite_tokens').insert({
       token,
       inviter_id: userId,
+      expires_at: expiresAt,
     });
     const url = `${window.location.origin}/lp?token=${token}`;
     setInviteUrl(url);
