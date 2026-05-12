@@ -2,80 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-
-// ===== マイタウン SVG =====
-const DayTownSVG = ({ km }: { km: number }) => (
-  <svg viewBox="0 0 360 160" style={{ width: '100%', height: '100%' }}>
-    <defs>
-      <linearGradient id="lp-daysky" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#87CEEB"/>
-        <stop offset="100%" stopColor="#C9E8F5"/>
-      </linearGradient>
-    </defs>
-    <rect width="360" height="160" fill="url(#lp-daysky)"/>
-    <circle cx="320" cy="22" r="14" fill="#FFE066"/>
-    <circle cx="320" cy="22" r="10" fill="#FFD700"/>
-    <ellipse cx="55" cy="22" rx="22" ry="11" fill="white" opacity="0.95"/>
-    <ellipse cx="38" cy="26" rx="14" ry="9" fill="white" opacity="0.95"/>
-    <ellipse cx="72" cy="26" rx="14" ry="9" fill="white" opacity="0.95"/>
-    <ellipse cx="180" cy="18" rx="18" ry="9" fill="white" opacity="0.85"/>
-    <ellipse cx="165" cy="22" rx="12" ry="7" fill="white" opacity="0.85"/>
-    <ellipse cx="195" cy="22" rx="12" ry="7" fill="white" opacity="0.85"/>
-    <rect x="0" y="128" width="360" height="32" fill="#5D9E3F"/>
-    <rect x="0" y="128" width="360" height="5" fill="#7BC142"/>
-    <rect x="0" y="136" width="360" height="8" fill="#8B8B8B" opacity="0.4"/>
-    {[20,60,100,140,180,220,260,300,340].map(x => (
-      <rect key={x} x={x} y={139} width={20} height={2} fill="white" opacity="0.5"/>
-    ))}
-    <rect x="4" y="92" width="28" height="38" fill="#F0F0F0" rx="2"/>
-    <rect x="4" y="86" width="28" height="8" fill="#E0E0E0" rx="2"/>
-    <rect x="9" y="96" width="7" height="8" fill="#87CEEB" opacity="0.8"/>
-    <rect x="20" y="96" width="7" height="8" fill="#87CEEB" opacity="0.8"/>
-    <rect x="9" y="108" width="7" height="8" fill="#87CEEB" opacity="0.8"/>
-    <rect x="20" y="108" width="7" height="8" fill="#87CEEB" opacity="0.8"/>
-    <rect x="13" y="118" width="10" height="12" fill="#8D6E63" rx="1"/>
-    <rect x="36" y="65" width="30" height="65" fill="#C0392B" rx="2"/>
-    <rect x="36" y="60" width="30" height="7" fill="#A93226" rx="1"/>
-    {[0,1,2].map(col => [0,1,2,3,4].map(row => (
-      <rect key={`b2-${col}-${row}`} x={40+col*9} y={68+row*12} width={6} height={8} fill="#FFE0B2" opacity={0.85}/>
-    )))}
-    <rect x="48" y="120" width="8" height="10" fill="#5D4037" rx="1"/>
-    <rect x="70" y="40" width="35" height="90" fill="#9E9E9E" rx="2"/>
-    <rect x="70" y="35" width="35" height="7" fill="#757575" rx="1"/>
-    <rect x="83" y="28" width="3" height="9" fill="#616161"/>
-    <circle cx="84" cy="27" r="2" fill="#EF5350" opacity="0.9"/>
-    {[0,1].map(col => [0,1,2,3,4,5,6].map(row => (
-      <rect key={`b3-${col}-${row}`} x={74+col*16} y={44+row*12} width={10} height={8} fill="#B3E5FC" opacity={0.8}/>
-    )))}
-    <rect x="140" y="25" width="42" height="105" fill="#42A5F5" rx="2"/>
-    <rect x="140" y="20" width="42" height="7" fill="#1E88E5" rx="1"/>
-    <rect x="155" y="13" width="5" height="9" fill="#1565C0"/>
-    <circle cx="157" cy="12" r="2.5" fill="#EF5350" opacity="0.9"/>
-    {[0,1].map(col => [0,1,2,3,4,5,6,7].map(row => (
-      <rect key={`b4-${col}-${row}`} x={145+col*18} y={28+row*12} width={13} height={8} fill="white" opacity={0.3}/>
-    )))}
-    <rect x="190" y="60" width="28" height="70" fill="#FF8F00" rx="2"/>
-    <rect x="190" y="55" width="28" height="7" fill="#E65100" rx="1"/>
-    {[0,1].map(col => [0,1,2,3,4].map(row => (
-      <rect key={`b5-${col}-${row}`} x={194+col*13} y={63+row*12} width={9} height={8} fill="#FFF9C4" opacity={0.8}/>
-    )))}
-    <rect x="200" y="120" width="10" height="10" fill="#5D4037" rx="1"/>
-    <rect x="222" y="38" width="36" height="92" fill="#26C6DA" rx="2"/>
-    <rect x="222" y="33" width="36" height="7" fill="#00ACC1" rx="1"/>
-    {[0,1].map(col => [0,1,2,3,4,5,6].map(row => (
-      <rect key={`b6-${col}-${row}`} x={226+col*15} y={40+row*12} width={11} height={8} fill="white" opacity={0.3}/>
-    )))}
-    {km >= 50 && (
-      <><rect x="109" y="120" width="5" height="10" fill="#5D4037"/><circle cx="111" cy="113" r="9" fill="#388E3C"/><circle cx="111" cy="113" r="6" fill="#43A047"/></>
-    )}
-    {km >= 300 ? (
-      <><ellipse cx="338" cy="116" rx="20" ry="12" fill="#81C784" stroke="#4CAF50" strokeWidth="1.5"/><ellipse cx="338" cy="116" rx="13" ry="7" fill="#A5D6A7"/><ellipse cx="338" cy="116" rx="6" ry="3" fill="#66BB6A"/><text x="338" y="119" textAnchor="middle" fontSize="5" fill="#1B5E20" fontFamily="sans-serif" fontWeight="bold">STADIUM</text></>
-    ) : (
-      <><ellipse cx="338" cy="116" rx="19" ry="11" fill="none" stroke="#BDBDBD" strokeWidth="1" strokeDasharray="3 2"/><text x="338" y="113" textAnchor="middle" fontSize="7" fill="#BDBDBD">🔒</text><text x="338" y="121" textAnchor="middle" fontSize="5" fill="#BDBDBD" fontFamily="sans-serif">STADIUM</text></>
-    )}
-  </svg>
-);
+import MiniTown from '../components/MiniTown';
 
 // ===== スマホモックアップ =====
 const PhoneMockup = () => (
@@ -138,8 +65,8 @@ const TownScreen = () => (
     <div style={{ padding: '12px 12px 0' }}>
       <p style={{ fontSize: 10, fontWeight: 700, color: '#A0A0BE', marginBottom: 8, letterSpacing: '0.1em' }}>マイタウン</p>
     </div>
-    <div style={{ background: '#E8F4F8', height: 100 }}>
-      <DayTownSVG km={300}/>
+    <div style={{ background: '#C2E8FF' }}>
+      <MiniTown isDark={false} km={300}/>
     </div>
     <div style={{ padding: '8px 12px 12px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
