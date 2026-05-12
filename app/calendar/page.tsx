@@ -194,7 +194,7 @@ export default function CalendarPage() {
           <p className="text-xs text-center py-4" style={{ color: 'var(--text-muted)' }}>読み込み中...</p>
         ) : hasDailyPlans ? (
           <div className="flex flex-col gap-2">
-            {dailyPlans.map((plan, i) => {
+            {dailyPlans.filter(plan => plan.date >= `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`).map((plan, i) => {
               const weatherDay = forecastMap[plan.date];
               return (
                 <div key={i} className="rounded-xl p-3 flex items-center gap-3 border"
