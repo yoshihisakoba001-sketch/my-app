@@ -6,14 +6,14 @@ import MiniTown from '../components/MiniTown';
 
 // ===== スマホモックアップ =====
 const PhoneMockup = () => (
-  <div style={{ width: 260, flexShrink: 0, background: '#1A1A2E', borderRadius: 40, border: '6px solid #1A1A2E', boxShadow: '0 32px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+  <div style={{ width: 270, flexShrink: 0, background: '#1A1A2E', borderRadius: 40, border: '6px solid #1A1A2E', boxShadow: '0 32px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1)', overflow: 'hidden' }}>
     <div style={{ background: '#1A1A2E', height: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' }}>
       <span style={{ fontSize: 10, color: 'white', fontWeight: 700 }}>9:41</span>
       <div style={{ width: 72, height: 10, background: '#0A0A1A', borderRadius: 100 }}/>
       <span style={{ fontSize: 10, color: 'white', fontWeight: 700 }}>100%</span>
     </div>
-    <div style={{ width: '100%', height: 520, overflow: 'hidden', position: 'relative' }}>
-      <img src="/home-screen.png" alt="RunPlanホーム画面" style={{ width: '100%', position: 'absolute', top: 0, left: 0, objectFit: 'cover', objectPosition: 'top' }}/>
+    <div style={{ width: '100%', height: 548, overflow: 'hidden', position: 'relative' }}>
+      <img src="/home-screen.png" alt="RunPlanホーム画面" style={{ width: '100%', position: 'absolute', top: -28, left: 0 }}/>
     </div>
   </div>
 );
