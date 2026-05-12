@@ -465,7 +465,7 @@ export default function Home() {
               const next = BUILDINGS.find(b => b.unlockedAt > totalKm);
               return next ? (
                 <span className="text-xs px-2 py-1 rounded-full font-semibold" style={{ background: 'var(--accent-3-bg)', color: 'var(--accent-3)' }}>
-                  {next.icon} {next.name}まで {Math.max(0, next.unlockedAt - totalKm)}km
+                  {next.icon} {next.name}まで {Math.max(0, next.unlockedAt - totalKm).toFixed(1)}km
                 </span>
               ) : null;
             })()}
