@@ -8,21 +8,22 @@ import { getWeather, getUserLocation, WeatherData } from './lib/weather';
 import { useTheme } from './components/ThemeContext';
 
 const MiniTown = ({ isDark, km }: { isDark: boolean; km: number }) => {
-  // viewBox width grows with each unlock — fills the card width dynamically
+  // viewBox width shrinks with fewer unlocks → uniform scale up → buildings fill card width
   const vw = km >= 500 ? 340 : km >= 400 ? 322 : km >= 350 ? 300 : km >= 300 ? 278 :
              km >= 250 ? 248 : km >= 200 ? 224 : km >= 150 ? 200 : km >= 100 ? 174 :
              km >= 50  ? 150 : 136;
+  const svgH = Math.round(80 * 340 / vw); // proportional height → uniform scale = 340/vw
   const sx = vw - 20; // sun/moon center-x, always top-right
 
   return (
-  <svg viewBox={`0 0 ${vw} 80`} shapeRendering="crispEdges" style={{ width: '100%', height: 80, imageRendering: 'pixelated' } as React.CSSProperties}>
+  <svg viewBox={`0 0 ${vw} 80`} shapeRendering="crispEdges" style={{ width: '100%', height: svgH, display: 'block', imageRendering: 'pixelated' } as React.CSSProperties}>
     <defs>
       <linearGradient id="minisky" x1="0%" y1="0%" x2="0%" y2="100%">
         <stop offset="0%" stopColor={isDark ? '#05050F' : '#5BB8F5'}/>
         <stop offset="100%" stopColor={isDark ? '#0D0D20' : '#C2E8FF'}/>
       </linearGradient>
     </defs>
-    <rect width="340" height="80" fill="url(#minisky)"/>
+    <rect width={vw} height="80" fill="url(#minisky)"/>
 
     {/* Moon / Sun — always top-right */}
     {isDark ? (
@@ -46,8 +47,8 @@ const MiniTown = ({ isDark, km }: { isDark: boolean; km: number }) => {
     </>)}
 
     {/* Ground */}
-    <rect x="0" y="64" width="340" height="16" fill={isDark ? '#0D1A0D' : '#4A9E2F'}/>
-    <rect x="0" y="64" width="340" height="3"  fill={isDark ? '#182818' : '#6BBF3E'}/>
+    <rect x="0" y="64" width={vw} height="16" fill={isDark ? '#0D1A0D' : '#4A9E2F'}/>
+    <rect x="0" y="64" width={vw} height="3"  fill={isDark ? '#182818' : '#6BBF3E'}/>
     {!isDark && [0,40,80,120,160,200,240,280,320].map(x => (
       <rect key={x} x={x} y={70} width={18} height={1} fill="white" opacity="0.35"/>
     ))}
