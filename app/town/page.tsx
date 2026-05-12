@@ -949,7 +949,7 @@ export default function TownPage() {
               </div>
               {nextUnlock && (
                 <span className="text-xs px-2 py-1 rounded-full font-semibold" style={{ background: 'var(--accent-3-bg)', color: 'var(--accent-3)' }}>
-                  {nextUnlock.icon} {nextUnlock.name}まで {Math.max(0, nextUnlock.unlockedAt - totalKm)}km
+                  {nextUnlock.icon} {nextUnlock.name}まで {Math.max(0, nextUnlock.unlockedAt - totalKm).toFixed(1)}km
                 </span>
               )}
             </div>
