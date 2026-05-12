@@ -74,7 +74,6 @@ export default function ProgressBar({ value, max, label, unit = '', milestones, 
             return (
               <div key={i} className="absolute flex flex-col items-center" style={{ left: `${mPct}%`, transform: 'translateX(-50%)' }}>
                 <span className="text-sm" style={{ opacity: achieved ? 1 : 0.3 }}>{m.icon}</span>
-                <span className="text-[9px] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>{m.value}{unit}</span>
               </div>
             );
           })}

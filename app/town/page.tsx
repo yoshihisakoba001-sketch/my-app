@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import BottomNav from '../components/BottomNav';
 import ProgressBar from '../components/ProgressBar';
 import { supabase } from '../lib/supabase';
@@ -20,146 +20,833 @@ const BUILDINGS = [
   { name: '城アップグレード', unlockedAt: 750, icon: '🚩' },
 ];
 
-const DayTown = ({ km }: { km: number }) => (
-  <svg viewBox="0 0 360 160" style={{ width: '100%', height: '100%' }}>
-    <defs>
-      <linearGradient id="daysky" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#87CEEB"/>
-        <stop offset="100%" stopColor="#C9E8F5"/>
-      </linearGradient>
-    </defs>
-    <rect width="360" height="160" fill="url(#daysky)"/>
-    <circle cx="320" cy="22" r="14" fill="#FFE066"/>
-    <circle cx="320" cy="22" r="10" fill="#FFD700"/>
-    <ellipse cx="55" cy="22" rx="22" ry="11" fill="white" opacity="0.95"/>
-    <ellipse cx="38" cy="26" rx="14" ry="9" fill="white" opacity="0.95"/>
-    <ellipse cx="72" cy="26" rx="14" ry="9" fill="white" opacity="0.95"/>
-    <ellipse cx="180" cy="18" rx="18" ry="9" fill="white" opacity="0.85"/>
-    <ellipse cx="165" cy="22" rx="12" ry="7" fill="white" opacity="0.85"/>
-    <ellipse cx="195" cy="22" rx="12" ry="7" fill="white" opacity="0.85"/>
-    <rect x="0" y="128" width="360" height="32" fill="#5D9E3F"/>
-    <rect x="0" y="128" width="360" height="5" fill="#7BC142"/>
-    <rect x="0" y="136" width="360" height="8" fill="#8B8B8B" opacity="0.4"/>
-    {[20,60,100,140,180,220,260,300,340].map(x => (
-      <rect key={x} x={x} y={139} width={20} height={2} fill="white" opacity="0.5"/>
-    ))}
-    <rect x="4" y="92" width="28" height="38" fill="#F0F0F0" rx="2"/>
-    <rect x="4" y="86" width="28" height="8" fill="#E0E0E0" rx="2"/>
-    <rect x="9" y="96" width="7" height="8" fill="#87CEEB" opacity="0.8"/>
-    <rect x="20" y="96" width="7" height="8" fill="#87CEEB" opacity="0.8"/>
-    <rect x="9" y="108" width="7" height="8" fill="#87CEEB" opacity="0.8"/>
-    <rect x="20" y="108" width="7" height="8" fill="#87CEEB" opacity="0.8"/>
-    <rect x="13" y="118" width="10" height="12" fill="#8D6E63" rx="1"/>
-    <rect x="36" y="65" width="30" height="65" fill="#C0392B" rx="2"/>
-    <rect x="36" y="60" width="30" height="7" fill="#A93226" rx="1"/>
-    {[0,1,2].map(col => [0,1,2,3,4].map(row => (
-      <rect key={`b2-${col}-${row}`} x={40+col*9} y={68+row*12} width={6} height={8} fill="#FFE0B2" opacity={0.85}/>
-    )))}
-    <rect x="48" y="120" width="8" height="10" fill="#5D4037" rx="1"/>
-    <rect x="70" y="40" width="35" height="90" fill="#9E9E9E" rx="2"/>
-    <rect x="70" y="35" width="35" height="7" fill="#757575" rx="1"/>
-    <rect x="83" y="28" width="3" height="9" fill="#616161"/>
-    <circle cx="84" cy="27" r="2" fill="#EF5350" opacity="0.9"/>
-    {[0,1].map(col => [0,1,2,3,4,5,6].map(row => (
-      <rect key={`b3-${col}-${row}`} x={74+col*16} y={44+row*12} width={10} height={8} fill="#B3E5FC" opacity={0.8}/>
-    )))}
-    <rect x="140" y="25" width="42" height="105" fill="#42A5F5" rx="2"/>
-    <rect x="140" y="20" width="42" height="7" fill="#1E88E5" rx="1"/>
-    <rect x="155" y="13" width="5" height="9" fill="#1565C0"/>
-    <circle cx="157" cy="12" r="2.5" fill="#EF5350" opacity="0.9"/>
-    {[0,1].map(col => [0,1,2,3,4,5,6,7].map(row => (
-      <rect key={`b4-${col}-${row}`} x={145+col*18} y={28+row*12} width={13} height={8} fill="white" opacity={0.3}/>
-    )))}
-    <rect x="190" y="60" width="28" height="70" fill="#FF8F00" rx="2"/>
-    <rect x="190" y="55" width="28" height="7" fill="#E65100" rx="1"/>
-    {[0,1].map(col => [0,1,2,3,4].map(row => (
-      <rect key={`b5-${col}-${row}`} x={194+col*13} y={63+row*12} width={9} height={8} fill="#FFF9C4" opacity={0.8}/>
-    )))}
-    <rect x="200" y="120" width="10" height="10" fill="#5D4037" rx="1"/>
-    <rect x="222" y="38" width="36" height="92" fill="#26C6DA" rx="2"/>
-    <rect x="222" y="33" width="36" height="7" fill="#00ACC1" rx="1"/>
-    {[0,1].map(col => [0,1,2,3,4,5,6].map(row => (
-      <rect key={`b6-${col}-${row}`} x={226+col*15} y={40+row*12} width={11} height={8} fill="white" opacity={0.3}/>
-    )))}
-    {km >= 50 && (<><rect x="109" y="120" width="5" height="10" fill="#5D4037"/><circle cx="111" cy="113" r="9" fill="#388E3C"/><circle cx="111" cy="113" r="6" fill="#43A047"/></>)}
-    {km >= 100 && (<><rect x="120" y="118" width="16" height="12" fill="#388E3C" rx="1"/><circle cx="128" cy="112" r="10" fill="#2E7D32"/><circle cx="128" cy="112" r="7" fill="#388E3C"/><rect x="118" y="125" width="24" height="5" fill="#1B5E20" rx="1"/></>)}
-    {km >= 150 && (<><rect x="262" y="122" width="52" height="8" fill="#757575" rx="2"/><path d="M264 122 Q278 108 288 122" stroke="#9E9E9E" strokeWidth="3" fill="none"/><path d="M288 122 Q298 108 314 122" stroke="#9E9E9E" strokeWidth="3" fill="none"/><rect x="276" y="106" width="3" height="16" fill="#616161"/><rect x="301" y="106" width="3" height="16" fill="#616161"/></>)}
-    {km >= 200 && (<><rect x="262" y="88" width="25" height="40" fill="#FFCCBC" rx="2"/><rect x="262" y="83" width="25" height="7" fill="#FF8A65" rx="1"/><rect x="265" y="95" width="8" height="10" fill="#87CEEB" opacity="0.8"/><rect x="277" y="95" width="7" height="10" fill="#87CEEB" opacity="0.8"/><rect x="270" y="110" width="10" height="12" fill="#8D6E63" rx="1"/><text x="274" y="81" textAnchor="middle" fontSize="6" fill="#BF360C" fontFamily="sans-serif">CAFE</text></>)}
-    {km >= 250 && (<><rect x="290" y="118" width="35" height="12" fill="#29B6F6" rx="2" opacity="0.8"/><rect x="290" y="100" width="5" height="20" fill="#5D4037"/><circle cx="292" cy="95" r="10" fill="#1B5E20"/><circle cx="292" cy="95" r="7" fill="#2E7D32"/><rect x="304" y="105" width="5" height="15" fill="#5D4037"/><circle cx="306" cy="100" r="9" fill="#33691E"/></>)}
-    {km >= 300 ? (<><ellipse cx="338" cy="116" rx="20" ry="12" fill="#81C784" stroke="#4CAF50" strokeWidth="1.5"/><ellipse cx="338" cy="116" rx="13" ry="7" fill="#A5D6A7"/><ellipse cx="338" cy="116" rx="6" ry="3" fill="#66BB6A"/><text x="338" y="119" textAnchor="middle" fontSize="5" fill="#1B5E20" fontFamily="sans-serif" fontWeight="bold">STADIUM</text></>) : (<><ellipse cx="338" cy="116" rx="19" ry="11" fill="none" stroke="#BDBDBD" strokeWidth="1" strokeDasharray="3 2"/><text x="338" y="113" textAnchor="middle" fontSize="7" fill="#BDBDBD">🔒</text><text x="338" y="121" textAnchor="middle" fontSize="5" fill="#BDBDBD" fontFamily="sans-serif">STADIUM</text></>)}
-    {km >= 350 && (<><rect x="4" y="55" width="30" height="38" fill="#CE93D8" rx="2"/><rect x="4" y="50" width="30" height="7" fill="#AB47BC" rx="1"/><rect x="4" y="44" width="30" height="8" fill="#9C27B0" rx="1"/>{[0,1,2].map(col => [0,1].map(row => (<rect key={`lib-${col}-${row}`} x={7+col*10} y={60+row*14} width={7} height={10} fill="#F3E5F5" opacity={0.9}/>)))}<text x="19" y="48" textAnchor="middle" fontSize="5" fill="#F3E5F5" fontFamily="sans-serif">LIBRARY</text></>)}
-    {km >= 400 && (<><rect x="36" y="38" width="30" height="28" fill="#FFAB91" rx="2"/><rect x="36" y="33" width="30" height="7" fill="#FF7043" rx="1"/><ellipse cx="46" cy="50" rx="4" ry="6" fill="white" opacity="0.5"/><ellipse cx="56" cy="48" rx="4" ry="6" fill="white" opacity="0.5"/><text x="51" y="31" textAnchor="middle" fontSize="5" fill="#BF360C" fontFamily="sans-serif">♨ SPA</text></>)}
-    {km >= 500 && (<><rect x="108" y="58" width="40" height="68" fill="#ECEFF1" rx="1"/><rect x="104" y="53" width="48" height="8" fill="#CFD8DC" rx="1"/><rect x="108" y="40" width="12" height="16" fill="#B0BEC5" rx="1"/><rect x="128" y="40" width="12" height="16" fill="#B0BEC5" rx="1"/><rect x="113" y="33" width="4" height="9" fill="#90A4AE"/><rect x="131" y="33" width="4" height="9" fill="#90A4AE"/>{[0,1,2].map(col => [0,1,2,3].map(row => (<rect key={`castle-${col}-${row}`} x={112+col*13} y={62+row*14} width={9} height={10} fill="#B3E5FC" opacity={0.7}/>)))}<rect x="120" y="108" width="16" height="18" fill="#8D6E63" rx="1"/></>)}
-    {km >= 600 && (<><circle cx="280" cy="30" r="2" fill="#FF5252"/>{[0,1,2,3,4,5,6,7].map(i => (<line key={`f1-${i}`} x1="280" y1="30" x2={280+Math.cos(i*Math.PI/4)*12} y2={30+Math.sin(i*Math.PI/4)*12} stroke="#FF5252" strokeWidth="1.5" opacity="0.8"/>))}<circle cx="300" cy="20" r="2" fill="#FFD740"/>{[0,1,2,3,4,5,6,7].map(i => (<line key={`f2-${i}`} x1="300" y1="20" x2={300+Math.cos(i*Math.PI/4)*10} y2={20+Math.sin(i*Math.PI/4)*10} stroke="#FFD740" strokeWidth="1.5" opacity="0.8"/>))}</>)}
-    {km >= 750 && (<><rect x="117" y="23" width="3" height="12" fill="#F44336"/><polygon points="120,23 130,27 120,31" fill="#F44336"/><rect x="133" y="23" width="3" height="12" fill="#2196F3"/><polygon points="136,23 146,27 136,31" fill="#2196F3"/></>)}
-  </svg>
-);
+const getRunnerX = (km: number): number => {
+  if (km >= 500) return 908;
+  if (km >= 400) return 838;
+  if (km >= 350) return 774;
+  if (km >= 300) return 698;
+  if (km >= 250) return 616;
+  if (km >= 200) return 546;
+  if (km >= 150) return 478;
+  if (km >= 100) return 408;
+  if (km >= 50)  return 338;
+  return 298;
+};
 
-const NightTown = ({ km }: { km: number }) => (
-  <svg viewBox="0 0 360 160" style={{ width: '100%', height: '100%' }}>
-    <defs>
-      <linearGradient id="nightsky2" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#05050A"/>
-        <stop offset="100%" stopColor="#0D0D22"/>
-      </linearGradient>
-    </defs>
-    <rect width="360" height="160" fill="url(#nightsky2)"/>
-    {[[15,8],[40,14],[80,5],[130,10],[180,4],[220,9],[270,6],[310,13],[345,7]].map(([x,y],i) => (
-      <circle key={i} cx={x} cy={y} r={0.9} fill="#EEEEF8" opacity="0.7"/>
-    ))}
-    <rect x="0" y="130" width="360" height="30" fill="#0D1A0D"/>
-    <rect x="0" y="130" width="360" height="8" fill="#181828"/>
-    {[0,35,70,105,140,175,210,245,280,315].map(x => (
-      <rect key={x} x={x} y={133} width={22} height={3} fill="#2A2A48" opacity="0.7"/>
-    ))}
-    <rect x="5" y="95" width="25" height="37" fill="#1E1E3A" rx="1"/>
-    <rect x="9" y="100" width="6" height="6" fill="#FFB347" opacity="0.8"/>
-    <rect x="18" y="100" width="6" height="6" fill="#C5FF47" opacity="0.6"/>
-    <rect x="9" y="110" width="6" height="6" fill="#C5FF47" opacity="0.5"/>
-    <rect x="18" y="110" width="6" height="6" fill="#FFB347" opacity="0.4"/>
-    <rect x="9" y="120" width="6" height="6" fill="#FFB347" opacity="0.7"/>
-    <rect x="36" y="55" width="32" height="77" fill="#252542" rx="1"/>
-    <rect x="51" y="48" width="2" height="8" fill="#3A3A58"/>
-    <circle cx="52" cy="47" r="2" fill="#FF4D4D" opacity="0.8"/>
-    {[0,1,2].map(col => [0,1,2,3,4].map(row => (
-      <rect key={`b2-${col}-${row}`} x={40+col*10} y={60+row*13} width={7} height={8}
-        fill={col===1&&row===2 ? '#FFB347' : col===0&&row===0 ? '#FFB347' : col===2&&row===3 ? '#FFB347' : col===0&&row===4 ? '#FFB347' : '#C5FF47'}
-        opacity={col===1&&row===1 ? 0.3 : col===2&&row===2 ? 0.2 : 0.7}/>
-    )))}
-    {km >= 100 && (<><rect x="74" y="118" width="42" height="14" fill="#0F2010"/><circle cx="85" cy="116" r="9" fill="#1A4020"/><circle cx="97" cy="118" r="7" fill="#183818"/><circle cx="108" cy="116" r="8" fill="#1E4828"/><circle cx="82" cy="120" r="5" fill="#122A14"/></>)}
-    <rect x="122" y="78" width="28" height="54" fill="#1E1E3A" rx="1"/>
-    {[0,1].map(col => [0,1,2].map(row => (
-      <rect key={`b3-${col}-${row}`} x={126+col*13} y={83+row*14} width={9} height={10}
-        fill={col===0&&row===1 ? '#FFB347' : col===1&&row===0 ? '#FFB347' : '#C5FF47'}
-        opacity={col===0&&row===2 ? 0.3 : 0.7}/>
-    )))}
-    <rect x="156" y="38" width="38" height="94" fill="#28284A" rx="1"/>
-    <rect x="170" y="30" width="10" height="10" fill="#2E2E50"/>
-    <rect x="173" y="27" width="4" height="5" fill="#3A3A60"/>
-    {[0,1].map(col => [0,1,2,3,4,5].map(row => (
-      <rect key={`b4-${col}-${row}`} x={161+col*16} y={44+row*13} width={11} height={9}
-        fill={col===0&&row===0 ? '#FFB347' : col===1&&row===2 ? '#FFB347' : col===0&&row===4 ? '#FFB347' : col===1&&row===5 ? '#FFB347' : '#C5FF47'}
-        opacity={col===0&&row===3 ? 0.25 : col===1&&row===1 ? 0.3 : 0.8}/>
-    )))}
-    {km >= 150 && (<><rect x="202" y="118" width="56" height="14" fill="#0A1828" rx="2"/><path d="M202 121 Q218 114 230 121 Q242 128 258 121" stroke="#1A3A5A" strokeWidth="2" fill="none"/><rect x="214" y="112" width="3" height="10" fill="#1E3850"/><rect x="242" y="112" width="3" height="10" fill="#1E3850"/></>)}
-    <rect x="206" y="72" width="24" height="58" fill="#1C1C38" rx="1"/>
-    {[0,1].map(col => [0,1,2,3].map(row => (
-      <rect key={`b5-${col}-${row}`} x={210+col*11} y={77+row*13} width={8} height={9}
-        fill={col===0&&row===1 ? '#FFB347' : col===1&&row===3 ? '#FFB347' : '#C5FF47'}
-        opacity={col===1&&row===0 ? 0.3 : 0.7}/>
-    )))}
-    <rect x="236" y="50" width="30" height="82" fill="#202040" rx="1"/>
-    {[0,1].map(col => [0,1,2,3,4,5].map(row => (
-      <rect key={`b6-${col}-${row}`} x={240+col*13} y={56+row*12} width={9} height={8}
-        fill={col===0&&row===2 ? '#FFB347' : col===1&&row===0 ? '#FFB347' : col===0&&row===5 ? '#FFB347' : '#47B8FF'}
-        opacity={col===1&&row===3 ? 0.25 : col===0&&row===1 ? 0.3 : 0.7}/>
-    )))}
-    {km >= 300 ? (<><ellipse cx="318" cy="112" rx="34" ry="20" fill="#1A2A1A" stroke="#C5FF47" strokeWidth="1.2"/><ellipse cx="318" cy="112" rx="22" ry="13" fill="#0A1A0A"/><text x="318" y="116" textAnchor="middle" fontSize="9" fill="#C5FF47" opacity="0.9" fontFamily="sans-serif">STADIUM</text></>) : (<><ellipse cx="318" cy="112" rx="32" ry="18" fill="none" stroke="#C5FF47" strokeWidth="1" opacity="0.25" strokeDasharray="4 3"/><text x="318" y="110" textAnchor="middle" fontSize="7" fill="#C5FF47" opacity="0.3" fontFamily="sans-serif">🔒</text><text x="318" y="119" textAnchor="middle" fontSize="6" fill="#C5FF47" opacity="0.25" fontFamily="sans-serif">STADIUM</text></>)}
-    <circle cx="335" cy="22" r="10" fill="#2A2A40"/>
-    <circle cx="330" cy="19" r="10" fill="#05050A"/>
-    <circle cx="345" cy="18" r="4" fill="#3A3A58" opacity="0.4"/>
-  </svg>
-);
+const DayTown = ({ km }: { km: number }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const runnerX = getRunnerX(km);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      const w = scrollRef.current.clientWidth;
+      scrollRef.current.scrollLeft = Math.max(0, runnerX - Math.round(w * 0.36));
+    }
+  }, [runnerX]);
+
+  return (
+    <div ref={scrollRef} style={{ overflowX: 'auto', height: '100%', scrollbarWidth: 'none' } as React.CSSProperties}>
+      <svg width="1200" height="160" shapeRendering="crispEdges" style={{ imageRendering: 'pixelated', display: 'block' }}>
+        <defs>
+          <linearGradient id="pixelDaySky" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#5BB8F5"/>
+            <stop offset="100%" stopColor="#C2E8FF"/>
+          </linearGradient>
+          <style>{`
+            .tr-run   { animation: trRun   0.28s steps(2,end) alternate infinite; transform-box: fill-box; transform-origin: center bottom; }
+            .tr-steam { animation: trSteam 1.6s  ease-in-out  infinite;           transform-box: fill-box; transform-origin: center bottom; }
+            .tr-fw1   { animation: trPulse 1.3s          ease-in-out infinite; }
+            .tr-fw2   { animation: trPulse 1.3s 0.43s    ease-in-out infinite; }
+            .tr-fw3   { animation: trPulse 1.3s 0.86s    ease-in-out infinite; }
+            @keyframes trRun   { 0%{transform:translateY(0)} 100%{transform:translateY(-3px)} }
+            @keyframes trSteam { 0%,100%{opacity:0.55;transform:translateY(0)} 50%{opacity:0.05;transform:translateY(-10px)} }
+            @keyframes trPulse { 0%,100%{opacity:1} 50%{opacity:0.08} }
+          `}</style>
+        </defs>
+
+        {/* Sky */}
+        <rect width="1200" height="128" fill="url(#pixelDaySky)"/>
+
+        {/* Sun */}
+        <rect x="1132" y="8"  width="22" height="22" fill="#FFE040"/>
+        <rect x="1137" y="4"  width="12" height="4"  fill="#FFE040"/>
+        <rect x="1137" y="30" width="12" height="4"  fill="#FFE040"/>
+        <rect x="1128" y="13" width="4"  height="12" fill="#FFE040"/>
+        <rect x="1154" y="13" width="4"  height="12" fill="#FFE040"/>
+        <rect x="1130" y="10" width="4"  height="4"  fill="#FFE040"/>
+        <rect x="1152" y="10" width="4"  height="4"  fill="#FFE040"/>
+        <rect x="1130" y="24" width="4"  height="4"  fill="#FFE040"/>
+        <rect x="1152" y="24" width="4"  height="4"  fill="#FFE040"/>
+
+        {/* Pixel clouds */}
+        <rect x="26"  y="22" width="42" height="4"  fill="white" opacity={0.93}/>
+        <rect x="30"  y="18" width="34" height="6"  fill="white" opacity={0.93}/>
+        <rect x="36"  y="14" width="22" height="8"  fill="white" opacity={0.93}/>
+        <rect x="220" y="24" width="32" height="4"  fill="white" opacity={0.86}/>
+        <rect x="224" y="20" width="24" height="6"  fill="white" opacity={0.86}/>
+        <rect x="228" y="16" width="16" height={8}  fill="white" opacity={0.86}/>
+        <rect x="530" y="18" width="44" height="4"  fill="white" opacity={0.91}/>
+        <rect x="534" y="14" width="36" height="6"  fill="white" opacity={0.91}/>
+        <rect x="540" y="10" width="24" height={8}  fill="white" opacity={0.91}/>
+        <rect x="790" y="20" width="36" height="4"  fill="white" opacity={0.86}/>
+        <rect x="794" y="16" width="28" height="6"  fill="white" opacity={0.86}/>
+        <rect x="798" y="12" width="18" height={8}  fill="white" opacity={0.86}/>
+
+        {/* Ground */}
+        <rect x="0" y="128" width="1200" height="32" fill="#4A9E2F"/>
+        <rect x="0" y="128" width="1200" height="3"  fill="#6BBF3E"/>
+
+        {/* Road */}
+        <rect x="0" y="135" width="1200" height="11" fill="#777"/>
+        <rect x="0" y="135" width="1200" height="2"  fill="#888"/>
+        {Array.from({ length: 29 }, (_, i) => (
+          <rect key={i} x={i*44} y={139} width={24} height={2} fill="white" opacity={0.55}/>
+        ))}
+
+        {/* ── PRE-EXISTING BUILDINGS (x=4 → x=286) ── */}
+
+        {/* 1. House x=4 */}
+        <rect x="18"  y="97"  width="40" height="3"  fill="#CC4444"/>
+        <rect x="16"  y="93"  width="44" height="6"  fill="#CC4444"/>
+        <rect x="14"  y="89"  width="8"  height="6"  fill="#BB3333"/>
+        <rect x="54"  y="89"  width="8"  height="6"  fill="#BB3333"/>
+        <rect x="12"  y="85"  width="6"  height="6"  fill="#AA2222"/>
+        <rect x="58"  y="85"  width="6"  height="6"  fill="#AA2222"/>
+        <rect x="48"  y="81"  width="6"  height="10" fill="#888"/>
+        <rect x="47"  y="79"  width="8"  height="4"  fill="#777"/>
+        <rect x="18"  y="100" width="40" height="28" fill="#EDD9A3"/>
+        {[4,8,12,16,20,24].map(dy => <rect key={dy} x={18} y={100+dy} width={40} height={1} fill="#D4BF86" opacity={0.55}/>)}
+        <rect x="22"  y="103" width="13" height="11" fill="#335577"/>
+        <rect x="23"  y="104" width="11" height="9"  fill="#90C8E8"/>
+        <rect x="28"  y="103" width="2"  height="11" fill="#335577"/>
+        <rect x="22"  y="108" width="13" height={1}  fill="#335577" opacity={0.5}/>
+        <rect x="41"  y="103" width="13" height="11" fill="#335577"/>
+        <rect x="42"  y="104" width="11" height="9"  fill="#90C8E8"/>
+        <rect x="47"  y="103" width="2"  height="11" fill="#335577"/>
+        <rect x="41"  y="108" width="13" height={1}  fill="#335577" opacity={0.5}/>
+        <rect x="30"  y="115" width="16" height="13" fill="#8B4513"/>
+        <rect x="32"  y="117" width="5"  height="7"  fill="#A0622D"/>
+        <rect x="39"  y="117" width="5"  height="7"  fill="#A0622D"/>
+        <rect x="37"  y="120" width="2"  height="2"  fill="#FFD700" opacity={0.8}/>
+        <rect x="28"  y="127" width="20" height="2"  fill="#CCC"/>
+
+        {/* 2. Apartment x=68 */}
+        <rect x="68"  y="70"  width="48" height="58" fill="#B0C4DE"/>
+        <rect x="68"  y="64"  width="48" height="8"  fill="#8898AA"/>
+        <rect x="70"  y="60"  width="44" height="6"  fill="#9AAABB"/>
+        {[11,22,33,44].map(dy => <rect key={dy} x={68} y={70+dy} width={48} height={1} fill="#9AAABB" opacity={0.6}/>)}
+        {[0,1,2].map(col => [0,1,2,3].map(row => (
+          <rect key={`apt-${col}-${row}`} x={74+col*14} y={73+row*11} width={10} height={8}
+            fill={row===1&&col===1?'#FFEEAA':row===3&&col===0?'#FFDDAA':'#C8E8FF'} opacity={0.9}/>
+        )))}
+        {[0,1,2].map(col => [0,1,2,3].map(row => (
+          <rect key={`aptd-${col}-${row}`} x={74+col*14+4} y={73+row*11} width={2} height={8} fill="#8898AA" opacity={0.35}/>
+        )))}
+        <rect x="78"  y="117" width="14" height="11" fill="#5D4037"/>
+        <rect x="80"  y="119" width="4"  height="7"  fill="#8B6340"/>
+        <rect x="86"  y="119" width="4"  height="7"  fill="#8B6340"/>
+        <rect x="84"  y="122" width="2"  height="2"  fill="#FFD700" opacity={0.7}/>
+
+        {/* 3. Shop x=124 */}
+        <rect x="124" y="92"  width="46" height="36" fill="#F5C870"/>
+        <rect x="124" y="84"  width="46" height="12" fill="#D4822A"/>
+        <rect x="120" y="98"  width="54" height="7"  fill="#DD3333"/>
+        {[0,1,2,3,4,5,6].map(i => <rect key={i} x={120+i*8} y={98} width={4} height={7} fill="#BB1111" opacity={0.3}/>)}
+        <rect x="128" y="78"  width="38" height="8"  fill="#CC6600"/>
+        <rect x="130" y="79"  width="34" height="4"  fill="#FFAA44"/>
+        <rect x="128" y="103" width="14" height="13" fill="#FFE8CC"/>
+        <rect x="130" y="105" width="10" height="9"  fill="#FFDDAA"/>
+        <rect x="131" y="109" width="3"  height="5"  fill="#E06020"/>
+        <rect x="135" y="110" width="3"  height="4"  fill="#20A040"/>
+        <rect x="144" y="103" width="18" height="13" fill="#FFE8CC"/>
+        <rect x="146" y="105" width="14" height="9"  fill="#FFDDAA"/>
+        <rect x="147" y="107" width="4"  height="7"  fill="#4060E0" opacity={0.8}/>
+        <rect x="152" y="107" width="4"  height="7"  fill="#E04060" opacity={0.8}/>
+        <rect x="134" y="112" width="22" height="16" fill="#8B4513"/>
+        <rect x="136" y="114" width="7"  height="8"  fill="#A0622D"/>
+        <rect x="145" y="114" width="7"  height="8"  fill="#A0622D"/>
+        <rect x="143" y="117" width="2"  height="2"  fill="#FFD700"/>
+
+        {/* 4. Office tower x=178 */}
+        <rect x="178" y="42"  width="40" height="86" fill="#7BA7CC"/>
+        <rect x="178" y="36"  width="40" height="8"  fill="#5A88AA"/>
+        <rect x="193" y="26"  width="4"  height="12" fill="#4A7899"/>
+        <rect x="191" y="24"  width="8"  height="4"  fill="#4A7899"/>
+        <rect x="194" y="20"  width="2"  height="6"  fill="#4070A0"/>
+        <rect x="194" y="18"  width="2"  height="4"  fill="#EE2222" opacity={0.9}/>
+        {[0,1].map(col => [0,1,2,3,4,5,6].map(row => (<>
+          <rect key={`of-${col}-${row}`}  x={184+col*17} y={44+row*11} width={13} height={8}
+            fill={col===0&&row===4?'#FFEEAA':col===1&&row===1?'#FFEEAA':'#C8E8FF'} opacity={0.8}/>
+          <rect key={`ofv-${col}-${row}`} x={184+col*17+6} y={44+row*11} width={1} height={8} fill="#5A88AA" opacity={0.35}/>
+          <rect key={`ofh-${col}-${row}`} x={184+col*17} y={44+row*11} width={13} height={1} fill="#5A88AA" opacity={0.25}/>
+        </>)))}
+        <rect x="186" y="118" width="14" height="10" fill="#5D4037"/>
+
+        {/* 5. Red building x=226 */}
+        <rect x="226" y="60"  width="42" height="68" fill="#C84040"/>
+        <rect x="226" y="54"  width="42" height="8"  fill="#A03030"/>
+        {[0,1,2,3].map(i => <rect key={i} x={228+i*10} y={46} width={7} height={10} fill="#B83838"/>)}
+        {[4,8,12,16,20,24,28,32,36,40,44,48,52,56,60].map(dy =>
+          <rect key={dy} x={226} y={60+dy} width={42} height={1} fill="#A03030" opacity={0.3}/>
+        )}
+        {[0,1,2].map(col => [0,1,2,3,4].map(row => (
+          <rect key={`rd-${col}-${row}`} x={232+col*12} y={63+row*12} width={8} height={9}
+            fill={col===1&&row===2?'#FFEEAA':col===0&&row===4?'#FFDDAA':'#FFD8B0'} opacity={0.85}/>
+        )))}
+        {[0,1,2].map(col => [0,1,2,3,4].map(row => (
+          <rect key={`rdg-${col}-${row}`} x={232+col*12+4} y={63+row*12} width={1} height={9} fill="#A03030" opacity={0.4}/>
+        )))}
+        <rect x="234" y="118" width="16" height="10" fill="#5D4037"/>
+
+        {/* 6. Narrow tower x=276 */}
+        <rect x="276" y="34"  width="30" height="94" fill="#9898C8"/>
+        <rect x="274" y="28"  width="34" height="8"  fill="#7878A8"/>
+        <rect x="278" y="20"  width="6"  height="12" fill="#6868A0"/>
+        <rect x="280" y="14"  width="2"  height="8"  fill="#5858A0"/>
+        {[11,22,33,44,55,66,77].map(dy => <rect key={dy} x={276} y={38+dy} width={30} height={1} fill="#7878A8" opacity={0.45}/>)}
+        {[0,1].map(col => [0,1,2,3,4,5,6].map(row => (
+          <rect key={`tw-${col}-${row}`} x={282+col*12} y={38+row*11} width={8} height={8}
+            fill={col===0&&row===3?'#FFEEAA':col===1&&row===1?'#FFEEAA':'#E0E8FF'} opacity={0.75}/>
+        )))}
+
+        {/* ── RUNNER side-view facing right (outer=position, inner=animation) ── */}
+        <g transform={`translate(${runnerX},100)`}>
+          <g className="tr-run">
+            {/* cap */}
+            <rect x="4"  y="0"  width="6"  height="2"  fill="#888888"/>
+            <rect x="2"  y="2"  width="12" height="3"  fill="#999999"/>
+            <rect x="12" y="5"  width="5"  height="2"  fill="#777777"/>
+            {/* head profile facing right */}
+            <rect x="2"  y="3"  width="11" height="8"  fill="#FFAA66"/>
+            <rect x="11" y="5"  width="2"  height="2"  fill="#111111"/>
+            <rect x="12" y="8"  width="2"  height="2"  fill="#DD8844"/>
+            {/* neck */}
+            <rect x="4"  y="11" width="3"  height="2"  fill="#FFAA66"/>
+            {/* torso */}
+            <rect x="2"  y="13" width="11" height="7"  fill="#FF3B8B"/>
+            <rect x="2"  y="19" width="11" height="1"  fill="#DD2270"/>
+            {/* front arm: upper arm→elbow(out)→forearm up — running form */}
+            <rect x="12" y="15" width="3"  height="6"  fill="#FFAA66"/>
+            <rect x="12" y="20" width="5"  height="2"  fill="#FFAA66"/>
+            <rect x="15" y="11" width="3"  height="11" fill="#FFAA66"/>
+            <rect x="14" y="10" width="4"  height="3"  fill="#FFAA66"/>
+            {/* back arm: trailing behind and down */}
+            <rect x="-3" y="15" width="6"  height="2"  fill="#FFAA66"/>
+            <rect x="-4" y="16" width="3"  height="5"  fill="#FFAA66"/>
+            {/* shorts */}
+            <rect x="2"  y="20" width="11" height="4"  fill="#1A1A2E"/>
+            {/* front leg: extending forward and down */}
+            <rect x="7"  y="24" width="5"  height="5"  fill="#FFAA66"/>
+            <rect x="9"  y="28" width="4"  height="5"  fill="#FFAA66"/>
+            <rect x="9"  y="32" width="7"  height="3"  fill="#1A1A2E"/>
+            {/* back leg: thigh back, shin kicked UP behind */}
+            <rect x="-2" y="24" width="5"  height="4"  fill="#FFAA66"/>
+            <rect x="-2" y="19" width="4"  height="7"  fill="#FFAA66"/>
+            <rect x="-4" y="17" width="6"  height="3"  fill="#1A1A2E"/>
+          </g>
+        </g>
+
+        {/* ── UNLOCKABLE FACILITIES ── */}
+
+        {/* 木 50km  x=308 */}
+        {km >= 50 ? (<>
+          <rect x="314" y="110" width="6"  height="18" fill="#7B4F2E"/>
+          <rect x="302" y="92"  width="30" height="22" fill="#2E8B2E"/>
+          <rect x="306" y="82"  width="22" height="16" fill="#38A038"/>
+          <rect x="310" y="74"  width="14" height="12" fill="#4CC050"/>
+          <rect x="313" y="68"  width="8"  height="10" fill="#5AD45A"/>
+          <rect x="302" y="112" width="30" height="2"  fill="#226022" opacity={0.25}/>
+        </>) : (
+          <rect x="300" y="68" width="32" height="60" fill="#AAAAAA" opacity={0.1} stroke="#BBBBBB" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 公園 100km  x=348 */}
+        {km >= 100 ? (<>
+          <rect x="348" y="108" width="4"  height="20" fill="#7B4F2E"/>
+          <rect x="336" y="90"  width="28" height="22" fill="#2E8B2E"/>
+          <rect x="340" y="80"  width="20" height="16" fill="#38A038"/>
+          <rect x="343" y="72"  width="14" height="12" fill="#4CC050"/>
+          <rect x="382" y="108" width="4"  height="20" fill="#7B4F2E"/>
+          <rect x="370" y="90"  width="28" height="22" fill="#2E8B2E"/>
+          <rect x="374" y="80"  width="20" height="16" fill="#38A038"/>
+          <rect x="377" y="72"  width="14" height="12" fill="#4CC050"/>
+          <rect x="352" y="116" width="28" height="4"  fill="#9B7B30"/>
+          <rect x="352" y="120" width="28" height="2"  fill="#7B5B20"/>
+          <rect x="354" y="122" width="4"  height="6"  fill="#7B5B20"/>
+          <rect x="374" y="122" width="4"  height="6"  fill="#7B5B20"/>
+        </>) : (
+          <rect x="334" y="70" width="60" height="58" fill="#AAAAAA" opacity={0.1} stroke="#BBBBBB" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 橋 150km  x=416 */}
+        {km >= 150 ? (<>
+          <rect x="412" y="124" width="68" height="6"  fill="#999"/>
+          <rect x="412" y="124" width="68" height="2"  fill="#AAA"/>
+          <rect x="416" y="110" width="10" height="16" fill="#777"/>
+          <rect x="470" y="110" width="10" height="16" fill="#777"/>
+          <rect x="412" y="120" width="68" height="6"  fill="#888"/>
+          {[0,1,2,3,4,5,6,7,8].map(i => <rect key={i} x={418+i*6} y={114} width={3} height={8} fill="#AAA"/>)}
+          <rect x="412" y="122" width="68" height="2"  fill="#BBB"/>
+        </>) : (
+          <rect x="410" y="108" width="72" height="22" fill="#AAAAAA" opacity={0.1} stroke="#BBBBBB" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* カフェ 200km  x=492 */}
+        {km >= 200 ? (<>
+          <rect x="492" y="88"  width="48" height="40" fill="#FFDDBB"/>
+          <rect x="492" y="78"  width="48" height="14" fill="#CC5500"/>
+          <rect x="488" y="98"  width="56" height="6"  fill="#DD6600"/>
+          {[0,1,2,3,4,5,6].map(i => <rect key={i} x={488+i*8} y={98} width={4} height={6} fill="#BB4400" opacity={0.3}/>)}
+          <rect x="498" y="102" width="13" height="12" fill="#335577"/>
+          <rect x="499" y="103" width="11" height="10" fill="#90C8E8"/>
+          <rect x="504" y="102" width="2"  height="12" fill="#335577" opacity={0.5}/>
+          <rect x="498" y="108" width="13" height={1}  fill="#335577" opacity={0.5}/>
+          <rect x="515" y="102" width="13" height="12" fill="#335577"/>
+          <rect x="516" y="103" width="11" height="10" fill="#90C8E8"/>
+          <rect x="521" y="102" width="2"  height="12" fill="#335577" opacity={0.5}/>
+          <rect x="515" y="108" width="13" height={1}  fill="#335577" opacity={0.5}/>
+          <rect x="504" y="112" width="16" height="16" fill="#8B4513"/>
+          <rect x="506" y="114" width="5"  height="8"  fill="#A0622D"/>
+          <rect x="513" y="114" width="5"  height="8"  fill="#A0622D"/>
+          <rect x="492" y="70"  width="48" height="10" fill="#CC5500"/>
+          <rect x="494" y="71"  width="44" height="6"  fill="#FF8833"/>
+          <text x="516" y="77" textAnchor="middle" fontSize="5" fill="white" fontFamily="monospace" fontWeight="bold">CAFE</text>
+        </>) : (
+          <rect x="490" y="76" width="52" height="52" fill="#AAAAAA" opacity={0.1} stroke="#BBBBBB" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 川・森 250km  x=552 */}
+        {km >= 250 ? (<>
+          <rect x="548" y="128" width="74" height="20" fill="#4499DD"/>
+          <rect x="548" y="128" width="74" height="3"  fill="#66BBFF"/>
+          {[4,12,20,28,36,44,52,60].map(dx => <rect key={dx} x={550+dx} y={132} width={5} height={2} fill="#55AAEE" opacity={0.6}/>)}
+          <rect x="550" y="104" width="4"  height="24" fill="#7B4F2E"/>
+          <rect x="536" y="84"  width="30" height="24" fill="#2A7A2A"/>
+          <rect x="540" y="74"  width="22" height="16" fill="#38903A"/>
+          <rect x="543" y="67"  width="16" height="12" fill="#4AA040"/>
+          <rect x="590" y="104" width="4"  height="24" fill="#7B4F2E"/>
+          <rect x="578" y="84"  width="30" height="24" fill="#2A7A2A"/>
+          <rect x="582" y="74"  width="22" height="16" fill="#38903A"/>
+          <rect x="585" y="67"  width="16" height="12" fill="#4AA040"/>
+        </>) : (
+          <rect x="534" y="66" width="74" height="62" fill="#AAAAAA" opacity={0.1} stroke="#BBBBBB" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* スタジアム 300km  x=622 */}
+        {km >= 300 ? (<>
+          <rect x="620" y="76"  width="84" height="52" fill="#6A9A6A"/>
+          <rect x="616" y="72"  width="92" height="8"  fill="#557755"/>
+          <rect x="612" y="80"  width="8"  height="48" fill="#557755"/>
+          <rect x="704" y="80"  width="8"  height="48" fill="#557755"/>
+          <rect x="628" y="84"  width="68" height="34" fill="#5A9A5A"/>
+          <rect x="660" y="84"  width="2"  height="34" fill="#4A8A4A"/>
+          <rect x="628" y="84"  width="68" height="2"  fill="#4A8A4A" opacity={0.5}/>
+          <rect x="628" y="102" width="68" height="2"  fill="#4A8A4A" opacity={0.5}/>
+          <rect x="628" y="118" width="68" height="2"  fill="#4A8A4A" opacity={0.5}/>
+          {[0,1,2,3].map(i => <rect key={i} x={628+i*17} y={76} width={12} height={6} fill="#CC4444"/>)}
+          {[0,1,2,3].map(i => <rect key={i} x={628+i*17} y={124} width={12} height={4} fill="#4444CC"/>)}
+        </>) : (
+          <rect x="610" y="72" width="104" height="56" fill="#AAAAAA" opacity={0.1} stroke="#BBBBBB" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 図書館 350km  x=718 */}
+        {km >= 350 ? (<>
+          <rect x="720" y="68"  width="58" height="60" fill="#C8A8E8"/>
+          <rect x="720" y="60"  width="58" height="12" fill="#A878C8"/>
+          <rect x="724" y="50"  width="50" height="14" fill="#B888D8"/>
+          <rect x="720" y="60"  width="6"  height="68" fill="#D8B8F8"/>
+          <rect x="772" y="60"  width="6"  height="68" fill="#D8B8F8"/>
+          {[0,1,2].map(col => [0,1].map(row => (<>
+            <rect key={`lb-${col}-${row}`} x={730+col*14} y={72+row*22} width={10} height={18} fill="#F0E8FF" opacity={0.85}/>
+            <rect key={`lbg-${col}-${row}`} x={730+col*14+4} y={72+row*22} width={2} height={18} fill="#A878C8" opacity={0.3}/>
+          </>)))}
+          <rect x="732" y="112" width="22" height="16" fill="#7868A8"/>
+          <rect x="734" y="114" width="7"  height="10" fill="#9888B8"/>
+          <rect x="743" y="114" width="7"  height="10" fill="#9888B8"/>
+          <text x="749" y="57" textAnchor="middle" fontSize="5" fill="white" fontFamily="monospace">LIBRARY</text>
+        </>) : (
+          <rect x="718" y="50" width="62" height="78" fill="#AAAAAA" opacity={0.1} stroke="#BBBBBB" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 温泉 400km  x=782 */}
+        {km >= 400 ? (<>
+          <rect x="782" y="84"  width="52" height="44" fill="#FFBB99"/>
+          <rect x="782" y="76"  width="52" height="12" fill="#FF7744"/>
+          <rect x="778" y="92"  width="60" height="5"  fill="#EE6633"/>
+          <rect x="788" y="96"  width="40" height="20" fill="#55BBEE" opacity={0.75}/>
+          <rect x="788" y="96"  width="40" height="3"  fill="#66CCFF" opacity={0.8}/>
+          {[4,10,16,22,28,34].map(dx => <rect key={dx} x={790+dx} y={100} width={4} height={2} fill="#88EEFF" opacity={0.6}/>)}
+          <g className="tr-steam">
+            <rect x="792" y="70" width="4" height="8"  fill="white" opacity={0.6}/>
+            <rect x="800" y="66" width="4" height="12" fill="white" opacity={0.5}/>
+            <rect x="808" y="68" width="4" height="10" fill="white" opacity={0.55}/>
+            <rect x="818" y="70" width="4" height="8"  fill="white" opacity={0.5}/>
+          </g>
+          <rect x="792" y="116" width="18" height="12" fill="#885533"/>
+          <rect x="794" y="118" width="5"  height="8"  fill="#AA7744"/>
+          <rect x="801" y="118" width="5"  height="8"  fill="#AA7744"/>
+          <text x="808" y="74" textAnchor="middle" fontSize="6" fill="#CC4400" fontFamily="monospace">♨ SPA</text>
+        </>) : (
+          <rect x="778" y="76" width="60" height="52" fill="#AAAAAA" opacity={0.1} stroke="#BBBBBB" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 城 500km  x=848  (+ 城アップグレード 750km) */}
+        {km >= 500 ? (<>
+          <rect x="850" y="56"  width="52" height="72" fill="#D0D0E0"/>
+          <rect x="846" y="50"  width="60" height="10" fill="#B8B8C8"/>
+          {[0,1,2,3,4].map(i => <rect key={i} x={848+i*11} y={40} width={8} height={12} fill="#C0C0D0"/>)}
+          <rect x="856" y="30"  width="32" height="14" fill="#B8B8C8"/>
+          {[0,1,2].map(i => <rect key={i} x={858+i*9} y={22} width={7} height={10} fill="#C0C0D0"/>)}
+          {[0,1,2].map(i => <rect key={i} x={860+i*9} y={18} width={3} height={6} fill="#B0B0C0"/>)}
+          {[0,1].map(col => [0,1,2,3].map(row => (<>
+            <rect key={`cs-${col}-${row}`}  x={856+col*22} y={60+row*14} width={16} height={11}
+              fill={col===0&&row===1?'#AAAAEE':'#8888CC'} opacity={0.75}/>
+            <rect key={`csg-${col}-${row}`} x={856+col*22+7} y={60+row*14} width={2} height={11} fill="#6666AA" opacity={0.35}/>
+          </>)))}
+          <rect x="868" y="104" width="18" height="24" fill="#6666AA"/>
+          <rect x="870" y="106" width="6"  height="14" fill="#7878BB"/>
+          <rect x="878" y="106" width="6"  height="14" fill="#7878BB"/>
+          <rect x="846" y="72"  width="6"  height="56" fill="#C8C8D8"/>
+          <rect x="900" y="72"  width="6"  height="56" fill="#C8C8D8"/>
+          {km >= 750 && (<>
+            <rect x="870" y="18"  width="4"  height="16" fill="#CC2222"/>
+            <polygon points="874,18 886,22 874,26" fill="#CC2222"/>
+            <rect x="882" y="16"  width="4"  height="16" fill="#2222CC"/>
+            <polygon points="886,16 898,20 886,24" fill="#2222CC"/>
+          </>)}
+        </>) : (
+          <rect x="844" y="40" width="66" height="88" fill="#AAAAAA" opacity={0.1} stroke="#BBBBBB" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 花火 600km — pixel art in sky above city buildings */}
+        {km >= 600 && (<>
+          <g className="tr-fw1">
+            <rect x="790" y="18" width="6" height="6" fill="#FF4444"/>
+            {[[-18,0],[-14,-8],[-8,-14],[0,-18],[8,-14],[14,-8],[18,0],[14,8],[8,14],[0,18],[-8,14],[-14,8]].map(([dx,dy],i) => (
+              <rect key={i} x={793+dx} y={21+dy} width={4} height={4} fill="#FF4444"/>
+            ))}
+          </g>
+          <g className="tr-fw2">
+            <rect x="848" y="10" width="6" height="6" fill="#FFD700"/>
+            {[[-16,0],[-12,-8],[-6,-14],[0,-16],[6,-14],[12,-8],[16,0],[12,8],[6,14],[0,16],[-6,14],[-12,8]].map(([dx,dy],i) => (
+              <rect key={i} x={851+dx} y={13+dy} width={4} height={4} fill="#FFD700"/>
+            ))}
+          </g>
+          <g className="tr-fw3">
+            <rect x="900" y="16" width="6" height="6" fill="#44AAFF"/>
+            {[[-16,0],[-12,-8],[-6,-14],[0,-16],[6,-14],[12,-8],[16,0],[12,8],[6,14],[0,16],[-6,14],[-12,8]].map(([dx,dy],i) => (
+              <rect key={i} x={903+dx} y={19+dy} width={4} height={4} fill="#44AAFF"/>
+            ))}
+          </g>
+        </>)}
+      </svg>
+    </div>
+  );
+};
+
+const NightTown = ({ km }: { km: number }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const runnerX = getRunnerX(km);
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const w = scrollRef.current.clientWidth;
+    scrollRef.current.scrollLeft = Math.max(0, runnerX - Math.round(w * 0.36));
+  }, [runnerX]);
+
+  return (
+    <div ref={scrollRef} style={{ overflowX: 'auto', overflowY: 'hidden', height: 160, scrollbarWidth: 'none' }}>
+      <svg width="1200" height="160" viewBox="0 0 1200 160" shapeRendering="crispEdges" style={{ display: 'block', imageRendering: 'pixelated' }}>
+        <defs>
+          <linearGradient id="nSky" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#010112"/>
+            <stop offset="65%" stopColor="#050528"/>
+            <stop offset="100%" stopColor="#080838"/>
+          </linearGradient>
+          <style>{`
+            .nr-run   { animation: trRun   0.28s steps(2,end) alternate infinite; transform-box: fill-box; transform-origin: center bottom; }
+            .nr-steam { animation: trSteam 1.6s  ease-in-out  infinite;           transform-box: fill-box; transform-origin: center bottom; }
+            .nr-fw1   { animation: nPulse 1.4s            ease-in-out infinite; }
+            .nr-fw2   { animation: nPulse 1.4s 0.47s      ease-in-out infinite; }
+            .nr-fw3   { animation: nPulse 1.4s 0.93s      ease-in-out infinite; }
+            .nr-fw4   { animation: nPulse 2.0s 0.35s      ease-in-out infinite; }
+            .nr-fw5   { animation: nPulse 1.8s 0.70s      ease-in-out infinite; }
+            @keyframes nPulse { 0%,100%{opacity:1} 50%{opacity:0.04} }
+          `}</style>
+        </defs>
+
+        {/* Night sky */}
+        <rect width="1200" height="128" fill="url(#nSky)"/>
+
+        {/* Stars */}
+        {([[32,8,2,0.9],[74,15,1,0.7],[124,5,2,0.8],[185,12,1,0.5],[244,6,1,0.85],[305,19,2,0.65],[355,4,1,0.8],[424,11,1,0.55],[485,20,2,0.9],[544,7,1,0.7],[604,15,1,0.75],[665,3,2,0.6],[724,17,1,0.65],[785,9,1,0.85],[845,23,1,0.6],[905,5,2,0.8],[965,19,1,0.7],[1025,8,1,0.9],[1085,14,1,0.6],[62,26,1,0.5],[172,28,2,0.6],[286,23,1,0.65],[405,31,1,0.5],[525,25,2,0.55],[645,36,1,0.65],[765,29,1,0.5],[885,21,2,0.6],[1005,33,1,0.65],[1065,37,1,0.55],[88,42,1,0.4],[205,40,1,0.5],[344,43,1,0.4],[456,37,2,0.45],[584,46,1,0.4],[706,41,1,0.5],[826,39,1,0.4],[946,45,1,0.45],[18,52,1,0.35],[135,54,1,0.3],[255,50,2,0.4],[395,57,1,0.3],[505,52,1,0.4],[635,60,1,0.3],[755,53,1,0.35],[875,50,2,0.3],[995,58,1,0.35],[200,68,1,0.3],[450,64,1,0.3],[700,70,1,0.3],[950,66,1,0.3]] as [number,number,number,number][]).map(([x,y,s,o],i) => (
+          <rect key={i} x={x} y={y} width={s} height={s} fill="white" opacity={o}/>
+        ))}
+
+        {/* Moon — crescent (pixel circles) */}
+        <circle cx="1118" cy="24" r="16" fill="#FFFFD0"/>
+        <circle cx="1126" cy="19" r="14" fill="#040420"/>
+
+        {/* Ground */}
+        <rect x="0" y="128" width="1200" height="32" fill="#060E06"/>
+        <rect x="0" y="128" width="1200" height="3"  fill="#091209"/>
+
+        {/* Road */}
+        <rect x="0" y="135" width="1200" height="11" fill="#0E0E18"/>
+        <rect x="0" y="135" width="1200" height="2"  fill="#141420"/>
+        {Array.from({ length: 29 }, (_, i) => (
+          <rect key={i} x={i*44} y={139} width={24} height={2} fill="white" opacity={0.1}/>
+        ))}
+
+        {/* ── PRE-EXISTING BUILDINGS (silhouettes + lit windows) ── */}
+
+        {/* 1. House x=4 */}
+        <rect x="18"  y="97"  width="40" height="3"  fill="#222255"/>
+        <rect x="16"  y="93"  width="44" height="6"  fill="#222255"/>
+        <rect x="14"  y="89"  width="8"  height="6"  fill="#1A1A44"/>
+        <rect x="54"  y="89"  width="8"  height="6"  fill="#1A1A44"/>
+        <rect x="12"  y="85"  width="6"  height="6"  fill="#141440"/>
+        <rect x="58"  y="85"  width="6"  height="6"  fill="#141440"/>
+        <rect x="48"  y="81"  width="6"  height="10" fill="#2A2A2A"/>
+        <rect x="47"  y="79"  width="8"  height="4"  fill="#222222"/>
+        <rect x="18"  y="100" width="40" height="28" fill="#333366"/>
+        <rect x="23"  y="104" width="11" height="9"  fill="#FFD060" opacity={0.88}/>
+        <rect x="42"  y="104" width="11" height="9"  fill="#FFD060" opacity={0.72}/>
+        <rect x="23"  y="116" width="11" height="7"  fill="#FFB040" opacity={0.55}/>
+        <rect x="30"  y="115" width="16" height="13" fill="#10101E"/>
+        <rect x="37"  y="114" width="2"  height="2"  fill="#FFDD88" opacity={0.9}/>
+        <rect x="28"  y="127" width="20" height="2"  fill="#1C1C2E"/>
+
+        {/* 2. Apartment x=68 */}
+        <rect x="68"  y="60"  width="48" height="68" fill="#003366"/>
+        <rect x="68"  y="60"  width="48" height="8"  fill="#002255"/>
+        <rect x="70"  y="56"  width="44" height="6"  fill="#003366"/>
+        {[0,1,2].map(col => [0,1,2,3].map(row => {
+          const lit = (col===0&&row===0)||(col===1&&row===0)||(col===2&&row===0)||
+                      (col===0&&row===1)||(col===2&&row===1)||
+                      (col===1&&row===2)||(col===2&&row===2)||(col===0&&row===3);
+          return <rect key={`an-${col}-${row}`} x={74+col*14} y={73+row*11} width={10} height={8}
+            fill={lit ? (col===2 ? '#88BBFF' : '#FFD060') : '#002255'} opacity={lit ? 0.85 : 1}/>;
+        }))}
+        <rect x="78"  y="117" width="14" height="11" fill="#121230"/>
+
+        {/* 3. Shop x=124 */}
+        <rect x="124" y="84"  width="46" height="44" fill="#333366"/>
+        <rect x="124" y="84"  width="46" height="12" fill="#222255"/>
+        <rect x="120" y="98"  width="54" height="7"  fill="#1A1A44"/>
+        <rect x="130" y="79"  width="34" height="4"  fill="#FF2288" opacity={0.75}/>
+        <rect x="130" y="79"  width="34" height="1"  fill="#FF99CC" opacity={0.95}/>
+        <rect x="129" y="105" width="10" height="9"  fill="#FFD060" opacity={0.85}/>
+        <rect x="147" y="105" width="14" height="9"  fill="#88BBFF" opacity={0.72}/>
+        <rect x="129" y="116" width="10" height="8"  fill="#FFB347" opacity={0.58}/>
+        <rect x="134" y="112" width="22" height="16" fill="#101022"/>
+
+        {/* 4. Office tower x=178 */}
+        <rect x="178" y="36"  width="40" height="92" fill="#003366"/>
+        <rect x="178" y="36"  width="40" height="8"  fill="#002255"/>
+        <rect x="193" y="26"  width="4"  height="12" fill="#003366"/>
+        <rect x="191" y="24"  width="8"  height="4"  fill="#003366"/>
+        <rect x="194" y="18"  width="2"  height="4"  fill="#FF4444" opacity={0.9}/>
+        {[0,1].map(col => [0,1,2,3,4,5,6].map(row => {
+          const lit = (col===0&&row===0)||(col===1&&row===0)||
+                      (col===0&&row===2)||(col===1&&row===1)||
+                      (col===0&&row===4)||(col===1&&row===3)||
+                      (col===1&&row===5)||(col===0&&row===6);
+          return <rect key={`on-${col}-${row}`} x={184+col*17} y={44+row*11} width={13} height={8}
+            fill={lit ? '#FFD060' : '#002255'} opacity={lit ? 0.85 : 1}/>;
+        }))}
+        <rect x="186" y="118" width="14" height="10" fill="#10102A"/>
+
+        {/* 5. Red building x=226 — dark maroon */}
+        <rect x="226" y="46"  width="42" height="82" fill="#333300"/>
+        <rect x="226" y="46"  width="42" height="8"  fill="#222200"/>
+        {[0,1,2,3].map(i => <rect key={i} x={228+i*10} y={38} width={7} height={10} fill="#1A1A00"/>)}
+        {[0,1,2].map(col => [0,1,2,3,4].map(row => {
+          const lit = (col===0&&row===0)||(col===0&&row===2)||(col===0&&row===4)||
+                      (col===1&&row===0)||(col===1&&row===2)||(col===1&&row===4)||
+                      (col===2&&row===1)||(col===2&&row===3);
+          return <rect key={`rdn-${col}-${row}`} x={232+col*12} y={63+row*12} width={8} height={9}
+            fill={lit ? '#FFB347' : '#1A1A00'} opacity={lit ? 0.82 : 1}/>;
+        }))}
+        <rect x="234" y="118" width="16" height="10" fill="#100E20"/>
+
+        {/* 6. Narrow tower x=276 */}
+        <rect x="276" y="14"  width="30" height="114" fill="#003300"/>
+        <rect x="274" y="14"  width="34" height="8"   fill="#002200"/>
+        <rect x="278" y="6"   width="6"  height="12"  fill="#003300"/>
+        <rect x="280" y="2"   width="2"  height="8"   fill="#004400"/>
+        {[0,1].map(col => [0,1,2,3,4,5,6].map(row => {
+          const lit = (col===0&&row===0)||(col===1&&row===1)||
+                      (col===0&&row===2)||(col===1&&row===2)||
+                      (col===0&&row===4)||(col===1&&row===4)||
+                      (col===0&&row===6)||(col===1&&row===5);
+          return <rect key={`twn-${col}-${row}`} x={282+col*12} y={38+row*11} width={8} height={8}
+            fill={lit ? (col===1 ? '#AADDFF' : '#FFD060') : '#002200'} opacity={lit ? 0.82 : 1}/>;
+        }))}
+
+        {/* ── RUNNER (night: fluorescent shirt, dark skin, neon shoes) ── */}
+        <g transform={`translate(${runnerX},100)`}>
+          <g className="nr-run">
+            {/* cap - dark, neon reflective stripe */}
+            <rect x="4"  y="0"  width="6"  height="2"  fill="#1E1E1E"/>
+            <rect x="2"  y="2"  width="12" height="3"  fill="#282828"/>
+            <rect x="12" y="5"  width="5"  height="2"  fill="#202020"/>
+            <rect x="2"  y="3"  width="12" height="1"  fill="#C5FF47" opacity={0.65}/>
+            {/* head - dark skin */}
+            <rect x="2"  y="3"  width="11" height="8"  fill="#AA6633"/>
+            <rect x="11" y="5"  width="2"  height="2"  fill="#111111"/>
+            <rect x="12" y="8"  width="2"  height="2"  fill="#552211"/>
+            {/* neck */}
+            <rect x="4"  y="11" width="3"  height="2"  fill="#AA6633"/>
+            {/* torso - neon yellow-green */}
+            <rect x="2"  y="13" width="11" height="7"  fill="#C5FF47"/>
+            <rect x="2"  y="19" width="11" height="1"  fill="#AADD30"/>
+            {/* front arm */}
+            <rect x="12" y="15" width="3"  height="6"  fill="#AA6633"/>
+            <rect x="12" y="20" width="5"  height="2"  fill="#AA6633"/>
+            <rect x="15" y="11" width="3"  height="11" fill="#AA6633"/>
+            <rect x="14" y="10" width="4"  height="3"  fill="#AA6633"/>
+            {/* back arm */}
+            <rect x="-3" y="15" width="6"  height="2"  fill="#AA6633"/>
+            <rect x="-4" y="16" width="3"  height="5"  fill="#AA6633"/>
+            {/* shorts - very dark */}
+            <rect x="2"  y="20" width="11" height="4"  fill="#0D0D22"/>
+            {/* front leg */}
+            <rect x="7"  y="24" width="5"  height="5"  fill="#AA6633"/>
+            <rect x="9"  y="28" width="4"  height="5"  fill="#AA6633"/>
+            {/* front shoe - neon */}
+            <rect x="9"  y="32" width="7"  height="3"  fill="#C5FF47"/>
+            {/* back leg */}
+            <rect x="-2" y="24" width="5"  height="4"  fill="#AA6633"/>
+            <rect x="-2" y="19" width="4"  height="7"  fill="#AA6633"/>
+            {/* back shoe - neon */}
+            <rect x="-4" y="17" width="6"  height="3"  fill="#C5FF47"/>
+          </g>
+        </g>
+
+        {/* ── UNLOCKABLE FACILITIES (night versions) ── */}
+
+        {/* 🌳 50km — tree silhouette */}
+        {km >= 50 ? (<>
+          <rect x="314" y="110" width="6"  height="18" fill="#2A1A2A"/>
+          <rect x="302" y="92"  width="30" height="22" fill="#663366"/>
+          <rect x="306" y="82"  width="22" height="16" fill="#553055"/>
+          <rect x="310" y="74"  width="14" height="12" fill="#442844"/>
+          <rect x="313" y="68"  width="8"  height="10" fill="#663366"/>
+        </>) : (
+          <rect x="300" y="68" width="32" height="60" fill="white" opacity={0.04} stroke="#334455" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 🌳 100km — park silhouette */}
+        {km >= 100 ? (<>
+          {/* 左の木 — #003399 系 */}
+          <rect x="348" y="108" width="4"  height="20" fill="#1A1A2A"/>
+          <rect x="336" y="90"  width="28" height="22" fill="#003399"/>
+          <rect x="340" y="80"  width="20" height="16" fill="#002888"/>
+          <rect x="343" y="72"  width="14" height="12" fill="#003399"/>
+          {/* 右の木 — #663300 系 */}
+          <rect x="382" y="108" width="4"  height="20" fill="#2A1A0A"/>
+          <rect x="370" y="90"  width="28" height="22" fill="#663300"/>
+          <rect x="374" y="80"  width="20" height="16" fill="#552800"/>
+          <rect x="377" y="72"  width="14" height="12" fill="#663300"/>
+          {/* ベンチ */}
+          <rect x="352" y="116" width="28" height="4"  fill="#2A2010"/>
+          <rect x="354" y="122" width="4"  height="6"  fill="#2A2010"/>
+          <rect x="374" y="122" width="4"  height="6"  fill="#2A2010"/>
+        </>) : (
+          <rect x="334" y="70" width="60" height="58" fill="white" opacity={0.04} stroke="#334455" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 🌉 150km — bridge at night */}
+        {km >= 150 ? (<>
+          <rect x="412" y="124" width="68" height="6"  fill="#333399"/>
+          <rect x="412" y="124" width="68" height="2"  fill="#3D3DAA"/>
+          <rect x="416" y="110" width="10" height="16" fill="#242275"/>
+          <rect x="470" y="110" width="10" height="16" fill="#242275"/>
+          <rect x="412" y="120" width="68" height="6"  fill="#2A2A88"/>
+          {[0,1,2,3,4,5,6,7,8].map(i => <rect key={i} x={418+i*6} y={114} width={3} height={8} fill="#333399"/>)}
+          {[0,3,6].map(i => <rect key={i} x={420+i*12} y={112} width={2} height={2} fill="#FFDD88" opacity={0.85}/>)}
+        </>) : (
+          <rect x="410" y="108" width="72" height="22" fill="white" opacity={0.04} stroke="#334455" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* ☕ 200km — cafe with neon sign */}
+        {km >= 200 ? (<>
+          <rect x="492" y="78"  width="48" height="50" fill="#663300"/>
+          <rect x="492" y="78"  width="48" height="14" fill="#442200"/>
+          <rect x="488" y="98"  width="56" height="6"  fill="#331A00"/>
+          <rect x="494" y="68"  width="44" height="8"  fill="#FF2288" opacity={0.85}/>
+          <rect x="494" y="68"  width="44" height="2"  fill="#FFAADD" opacity={0.95}/>
+          <rect x="494" y="75"  width="44" height="1"  fill="#FF66BB" opacity={0.7}/>
+          <rect x="499" y="103" width="11" height="10" fill="#FFD060" opacity={0.88}/>
+          <rect x="516" y="103" width="11" height="10" fill="#FFB040" opacity={0.78}/>
+          <rect x="504" y="112" width="16" height="16" fill="#331A00"/>
+        </>) : (
+          <rect x="490" y="76" width="52" height="52" fill="white" opacity={0.04} stroke="#334455" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 🌊 250km — river & forest at night */}
+        {km >= 250 ? (<>
+          <rect x="548" y="128" width="74" height="20" fill="#071620"/>
+          <rect x="548" y="128" width="74" height="3"  fill="#0B1E2C"/>
+          {[4,14,26,38,50,62].map(dx => <rect key={dx} x={550+dx} y={132} width={5} height={1} fill="#224488" opacity={0.5}/>)}
+          {/* 左の木 — #333399 系 */}
+          <rect x="550" y="104" width="4"  height="24" fill="#1A1A2A"/>
+          <rect x="536" y="84"  width="30" height="24" fill="#333399"/>
+          <rect x="540" y="74"  width="22" height="16" fill="#282888"/>
+          <rect x="543" y="67"  width="16" height="12" fill="#333399"/>
+          {/* 右の木 — #663366 系 */}
+          <rect x="590" y="104" width="4"  height="24" fill="#2A1A2A"/>
+          <rect x="578" y="84"  width="30" height="24" fill="#663366"/>
+          <rect x="582" y="74"  width="22" height="16" fill="#553055"/>
+          <rect x="585" y="67"  width="16" height="12" fill="#663366"/>
+        </>) : (
+          <rect x="534" y="66" width="74" height="62" fill="white" opacity={0.04} stroke="#334455" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 🏟️ 300km — stadium with floodlights */}
+        {km >= 300 ? (<>
+          <rect x="620" y="68"  width="84" height="60" fill="#003399"/>
+          <rect x="616" y="64"  width="92" height="8"  fill="#002266"/>
+          <rect x="612" y="72"  width="8"  height="56" fill="#002266"/>
+          <rect x="704" y="72"  width="8"  height="56" fill="#002266"/>
+          <rect x="612" y="66"  width="8"  height="6"  fill="#FFFFAA" opacity={0.9}/>
+          <rect x="704" y="66"  width="8"  height="6"  fill="#FFFFAA" opacity={0.9}/>
+          <rect x="628" y="76"  width="68" height="42" fill="#001A4D"/>
+          <rect x="660" y="76"  width="2"  height="42" fill="#003399" opacity={0.7}/>
+          <rect x="628" y="76"  width="68" height="2"  fill="#003399" opacity={0.5}/>
+          <rect x="628" y="94"  width="68" height="2"  fill="#003399" opacity={0.5}/>
+          {[0,1,2,3].map(i => <rect key={i} x={628+i*17} y={62} width={12} height={6} fill="#FF4444" opacity={0.9}/>)}
+          {[0,1,2,3].map(i => <rect key={i} x={628+i*17} y={116} width={12} height={6} fill="#4466FF" opacity={0.85}/>)}
+        </>) : (
+          <rect x="610" y="64" width="104" height="64" fill="white" opacity={0.04} stroke="#334455" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 📚 350km — library */}
+        {km >= 350 ? (<>
+          <rect x="720" y="40"  width="58" height="88" fill="#663366"/>
+          <rect x="720" y="40"  width="58" height="12" fill="#442244"/>
+          <rect x="724" y="30"  width="50" height="14" fill="#442244"/>
+          <rect x="720" y="40"  width="6"  height="88" fill="#553355"/>
+          <rect x="772" y="40"  width="6"  height="88" fill="#553355"/>
+          {[0,1,2].map(col => [0,1].map(row => (
+            <rect key={`lbn-${col}-${row}`} x={730+col*14} y={72+row*22} width={10} height={18}
+              fill={row===0 ? '#FFD060' : '#FFEEAA'} opacity={row===0 ? 0.88 : 0.72}/>
+          )))}
+          <rect x="732" y="112" width="22" height="16" fill="#331A33"/>
+          <rect x="724" y="34"  width="50" height="6"  fill="#88BBFF" opacity={0.7}/>
+          <rect x="724" y="34"  width="50" height="1"  fill="#CCDDFF" opacity={0.9}/>
+          <text x="749" y="39" textAnchor="middle" fontSize="5" fill="#AACCFF" fontFamily="monospace" fontWeight="bold">LIBRARY</text>
+        </>) : (
+          <rect x="718" y="30" width="62" height="98" fill="white" opacity={0.04} stroke="#334455" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* ♨️ 400km — onsen at night */}
+        {km >= 400 ? (<>
+          <rect x="782" y="76"  width="52" height="52" fill="#663300"/>
+          <rect x="782" y="76"  width="52" height="12" fill="#442200"/>
+          <rect x="778" y="92"  width="60" height="5"  fill="#331A00"/>
+          <rect x="788" y="96"  width="40" height="20" fill="#1A3A66"/>
+          <rect x="788" y="96"  width="40" height="3"  fill="#2255AA" opacity={0.85}/>
+          {[4,10,16,22,28,34].map(dx => <rect key={dx} x={790+dx} y={100} width={4} height={2} fill="#66AAEE" opacity={0.7}/>)}
+          <g className="nr-steam">
+            <rect x="792" y="70" width="4" height="8"  fill="white" opacity={0.45}/>
+            <rect x="800" y="66" width="4" height="12" fill="white" opacity={0.38}/>
+            <rect x="808" y="68" width="4" height="10" fill="white" opacity={0.42}/>
+            <rect x="818" y="70" width="4" height="8"  fill="white" opacity={0.38}/>
+          </g>
+          <rect x="792" y="116" width="18" height="12" fill="#331A00"/>
+          <rect x="782" y="76"  width="52" height="4"  fill="#FF4499" opacity={0.8}/>
+          <rect x="782" y="76"  width="52" height="1"  fill="#FFAACC" opacity={0.9}/>
+          <rect x="800" y="68"  width="20" height="4"  fill="#FF4499" opacity={0.75}/>
+          <rect x="800" y="68"  width="20" height="1"  fill="#FFAACC" opacity={0.9}/>
+        </>) : (
+          <rect x="778" y="76" width="60" height="52" fill="white" opacity={0.04} stroke="#334455" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 🏯 500km — castle silhouette */}
+        {km >= 500 ? (<>
+          <rect x="850" y="30"  width="52" height="98" fill="#333399"/>
+          <rect x="846" y="30"  width="60" height="10" fill="#222266"/>
+          {[0,1,2,3,4].map(i => <rect key={i} x={848+i*11} y={20} width={8} height={12} fill="#222266"/>)}
+          <rect x="856" y="10"  width="32" height="14" fill="#333399"/>
+          {[0,1,2].map(i => <rect key={i} x={858+i*9} y={4} width={7} height={10} fill="#222266"/>)}
+          {[0,1,2].map(i => <rect key={i} x={860+i*9} y={2} width={3} height={6} fill="#1A1A55"/>)}
+          {[0,1].map(col => [0,1,2,3].map(row => (
+            <rect key={`csn-${col}-${row}`} x={856+col*22} y={60+row*14} width={16} height={11}
+              fill={row%2===0 ? '#FFDD88' : '#FFB347'} opacity={row===0 ? 0.88 : row===3 ? 0.65 : 0.78}/>
+          )))}
+          <rect x="868" y="104" width="18" height="24" fill="#1A1A44"/>
+          <rect x="846" y="60"  width="6"  height="68" fill="#282866"/>
+          <rect x="900" y="60"  width="6"  height="68" fill="#282866"/>
+          {km >= 750 && (<>
+            <rect x="870" y="4"   width="4"  height="16" fill="#CC2222"/>
+            <polygon points="874,4 886,8 874,12" fill="#CC2222"/>
+            <rect x="882" y="2"   width="4"  height="16" fill="#2222CC"/>
+            <polygon points="886,2 898,6 886,10" fill="#2222CC"/>
+          </>)}
+        </>) : (
+          <rect x="844" y="20" width="66" height="108" fill="white" opacity={0.04} stroke="#334455" strokeWidth="1" strokeDasharray="3 2"/>
+        )}
+
+        {/* 🎆 600km — FIREWORKS! (5-color night display) */}
+        {km >= 600 && (<>
+          {/* FW1 — Red x=800 */}
+          <g className="nr-fw1">
+            <rect x="798" y="26" width="6"  height="6"  fill="#FFFFFF"/>
+            {[[-14,0],[-12,-8],[-6,-12],[0,-14],[6,-12],[12,-8],[14,0],[12,8],[6,12],[0,14],[-6,12],[-12,8]].map(([dx,dy],i) => (
+              <rect key={i} x={801+dx} y={29+dy} width={4} height={4} fill="#FF4444"/>
+            ))}
+            {[[-22,0],[-18,-12],[-10,-20],[0,-24],[10,-20],[18,-12],[22,0],[18,12],[10,20],[0,24],[-10,20],[-18,12]].map(([dx,dy],i) => (
+              <rect key={i} x={801+dx} y={29+dy} width={2} height={2} fill="#FF9999"/>
+            ))}
+          </g>
+          {/* FW2 — Gold x=878 */}
+          <g className="nr-fw2">
+            <rect x="876" y="16" width="6"  height="6"  fill="#FFFFFF"/>
+            {[[-14,0],[-12,-8],[-6,-12],[0,-14],[6,-12],[12,-8],[14,0],[12,8],[6,12],[0,14],[-6,12],[-12,8]].map(([dx,dy],i) => (
+              <rect key={i} x={879+dx} y={19+dy} width={4} height={4} fill="#FFD700"/>
+            ))}
+            {[[-24,0],[-20,-14],[-12,-22],[0,-26],[12,-22],[20,-14],[24,0],[20,14],[12,22],[0,26],[-12,22],[-20,14]].map(([dx,dy],i) => (
+              <rect key={i} x={879+dx} y={19+dy} width={2} height={2} fill="#FFEEAA"/>
+            ))}
+          </g>
+          {/* FW3 — Blue x=956 */}
+          <g className="nr-fw3">
+            <rect x="954" y="22" width="6"  height="6"  fill="#FFFFFF"/>
+            {[[-14,0],[-12,-8],[-6,-12],[0,-14],[6,-12],[12,-8],[14,0],[12,8],[6,12],[0,14],[-6,12],[-12,8]].map(([dx,dy],i) => (
+              <rect key={i} x={957+dx} y={25+dy} width={4} height={4} fill="#44AAFF"/>
+            ))}
+            {[[-22,0],[-18,-12],[-10,-20],[0,-24],[10,-20],[18,-12],[22,0],[18,12],[10,20],[0,24],[-10,20],[-18,12]].map(([dx,dy],i) => (
+              <rect key={i} x={957+dx} y={25+dy} width={2} height={2} fill="#AADDFF"/>
+            ))}
+          </g>
+          {/* FW4 — Green x=1034 */}
+          <g className="nr-fw4">
+            <rect x="1032" y="30" width="6"  height="6"  fill="#FFFFFF"/>
+            {[[-12,0],[-10,-6],[-6,-10],[0,-12],[6,-10],[10,-6],[12,0],[10,6],[6,10],[0,12],[-6,10],[-10,6]].map(([dx,dy],i) => (
+              <rect key={i} x={1035+dx} y={33+dy} width={4} height={4} fill="#44FF88"/>
+            ))}
+            {[[-20,0],[-16,-12],[-10,-18],[0,-22],[10,-18],[16,-12],[20,0],[16,12],[10,18],[0,22],[-10,18],[-16,12]].map(([dx,dy],i) => (
+              <rect key={i} x={1035+dx} y={33+dy} width={2} height={2} fill="#AAFFCC"/>
+            ))}
+          </g>
+          {/* FW5 — Purple x=1090 */}
+          <g className="nr-fw5">
+            <rect x="1088" y="14" width="6"  height="6"  fill="#FFFFFF"/>
+            {[[-14,0],[-12,-8],[-6,-12],[0,-14],[6,-12],[12,-8],[14,0],[12,8],[6,12],[0,14],[-6,12],[-12,8]].map(([dx,dy],i) => (
+              <rect key={i} x={1091+dx} y={17+dy} width={4} height={4} fill="#CC44FF"/>
+            ))}
+            {[[-22,0],[-18,-12],[-10,-20],[0,-24],[10,-20],[18,-12],[22,0],[18,12],[10,24],[-10,20],[-18,12]].map(([dx,dy],i) => (
+              <rect key={i} x={1091+dx} y={17+dy} width={2} height={2} fill="#EECCFF"/>
+            ))}
+          </g>
+        </>)}
+
+      </svg>
+    </div>
+  );
+};
 
 export default function TownPage() {
   const { isDark } = useTheme();
@@ -253,7 +940,7 @@ export default function TownPage() {
       {viewTab === 'my' && (
         <>
           <div className="mx-5 mt-4 rounded-2xl overflow-hidden border" style={{ borderColor: 'var(--border)', background: isDark ? '#0D0D20' : '#E8F4F8' }}>
-            <div style={{ height: 200 }}>
+            <div style={{ height: 160 }}>
               {isDark ? <NightTown km={totalKm}/> : <DayTown km={totalKm}/>}
             </div>
             <div className="px-4 py-3 flex items-center justify-between border-t" style={{ borderColor: 'var(--border)' }}>
@@ -280,6 +967,11 @@ export default function TownPage() {
                   { value: 200, icon: '☕' },
                   { value: 250, icon: '🌊' },
                   { value: 300, icon: '🏟️' },
+                  { value: 350, icon: '📚' },
+                  { value: 400, icon: '♨️' },
+                  { value: 500, icon: '🏯' },
+                  { value: 600, icon: '🎆' },
+                  { value: 750, icon: '🚩' },
                 ]}
               />
             </div>
