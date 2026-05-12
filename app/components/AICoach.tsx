@@ -60,7 +60,9 @@ export default function AICoach() {
         }
         if (data.planData) {
           const plansWithUserId = data.planData.map((p: any) => ({ ...p, user_id: userId }));
-          await supabase.from('plans').upsert(plansWithUserId);
+          const weekStarts = plansWithUserId.map((p: any) => p.week_start);
+          await supabase.from('plans').delete().eq('user_id', userId).in('week_start', weekStarts);
+          await supabase.from('plans').insert(plansWithUserId);
         }
         if (data.dailyPlanData) {
           const dailyPlansWithUserId = data.dailyPlanData.map((p: any) => ({ ...p, user_id: userId }));
