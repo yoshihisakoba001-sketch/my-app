@@ -5,10 +5,14 @@ import { supabase } from '../lib/supabase';
 import { useTheme } from '../components/ThemeContext';
 import BottomNav from '../components/BottomNav';
 
-type Message = {
-  role: 'user' | 'assistant';
-  content: string;
-};
+type Message = { role: 'user' | 'assistant'; content: string; };
+
+const SUGGESTIONS = [
+  { icon: '🎯', label: 'ランニングの目標設定', prompt: 'ユーザーがランニングの目標設定をしたいと話しかけてきました。コーチとして、現在の走力（週間走行距離や最近のレース記録など）を確認する質問を短く1つだけしてください。', action: '', enableImage: false },
+  { icon: '📋', label: 'トレーニング設計・改善', prompt: 'ユーザーがトレーニングの設計・改善を相談したいと言っています。コーチとして、現在の練習内容や改善したい課題を確認する質問を短く1つだけしてください。', action: '', enableImage: false },
+  { icon: '📝', label: 'トレーニング結果の登録', prompt: '', action: 'record', enableImage: false },
+  { icon: '📊', label: 'トレーニング内容の分析', prompt: 'ユーザーがトレーニング内容を分析してほしいと言っています。コーチとして、テキストで内容を教えてもらうかランニングアプリのスクリーンショットを送ってもらうよう促す短いメッセージを返してください。', action: '', enableImage: true },
+];
 
 export default function CoachPage() {
   const { isDark } = useTheme();
@@ -20,7 +24,6 @@ export default function CoachPage() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // 記録インプット用
   const [showRecord, setShowRecord] = useState(false);
   const [recordTab, setRecordTab] = useState('suunto');
   const [analyzing, setAnalyzing] = useState(false);
@@ -29,9 +32,12 @@ export default function CoachPage() {
   const [form, setForm] = useState({ distance: '', time: '', pace: '', hr: '', note: '' });
   const [errorMsg, setErrorMsg] = useState('');
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(true);
+  const [imageMode, setImageMode] = useState(false);
+  const [attachedImage, setAttachedImage] = useState<{ base64: string; mediaType: string; previewUrl: string } | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
   useEffect(() => {
     const init = async () => {
@@ -53,14 +59,11 @@ export default function CoachPage() {
       .eq('user_id', uid)
       .order('created_at', { ascending: true })
       .limit(50);
-
     if (data && data.length > 0) {
       setMessages(data as Message[]);
+      setSuggestionsOpen(false);
     } else {
-      setMessages([{
-        role: 'assistant',
-        content: 'こんにちは！AIコーチです 🏃\n今日のトレーニングや計画について何でも聞いてください！',
-      }]);
+      setMessages([{ role: 'assistant', content: 'こんにちは！AIコーチです 🏃\n何について話しましょうか？' }]);
     }
   };
 
@@ -70,34 +73,41 @@ export default function CoachPage() {
   };
 
   const send = async (customInput?: string) => {
-    const text = customInput || input;
-    if (!text.trim() || loading) return;
-    const userMsg: Message = { role: 'user', content: text };
+    const text = customInput ?? input;
+    if (!text.trim() && !attachedImage || loading) return;
+
+    const displayContent = attachedImage && !text.trim()
+      ? '📷 トレーニング画像を送信しました'
+      : attachedImage
+      ? `📷 画像\n${text}`
+      : text;
+
+    const userMsg: Message = { role: 'user', content: displayContent };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput('');
+    const imageToSend = attachedImage;
+    setAttachedImage(null);
     setLoading(true);
-    await saveMessage('user', text);
 
     try {
+      await saveMessage('user', displayContent);
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, userId, accessToken }),
+        body: JSON.stringify({ messages: newMessages, userId, accessToken, lastMessageImage: imageToSend }),
       });
       const data = await res.json();
 
       if (userId) {
         if (data.raceData) {
-              console.log('raceData:', data.raceData);
-              const result = await supabase.from('races').upsert(
-                    { user_id: userId, ...data.raceData },
-                    { onConflict: 'user_id,name' }
-             );
+          await supabase.from('races').upsert({ user_id: userId, ...data.raceData }, { onConflict: 'user_id,name' });
         }
         if (data.planData) {
           const plansWithUserId = data.planData.map((p: any) => ({ ...p, user_id: userId }));
-          await supabase.from('plans').upsert(plansWithUserId);
+          const weekStarts = plansWithUserId.map((p: any) => p.week_start);
+          await supabase.from('plans').delete().eq('user_id', userId).in('week_start', weekStarts);
+          await supabase.from('plans').insert(plansWithUserId);
         }
         if (data.dailyPlanData) {
           const dailyPlansWithUserId = data.dailyPlanData.map((p: any) => ({ ...p, user_id: userId }));
@@ -118,6 +128,44 @@ export default function CoachPage() {
     }
   };
 
+  const triggerCoach = async (triggerPrompt: string) => {
+    setLoading(true);
+    const triggerMessages = [...messages, { role: 'user' as const, content: triggerPrompt }];
+    try {
+      const res = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: triggerMessages, userId, accessToken }),
+      });
+      const data = await res.json();
+      const reply = data.reply || '';
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+      await saveMessage('assistant', reply);
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'エラーが発生しました。もう一度試してください。' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSuggestion = async (s: typeof SUGGESTIONS[number]) => {
+    setSuggestionsOpen(false);
+    if (s.action === 'record') { setShowRecord(true); return; }
+    if (s.enableImage) setImageMode(true);
+    await triggerCoach(s.prompt);
+  };
+
+  const handleImageAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = (reader.result as string).split(',')[1];
+      setAttachedImage({ base64, mediaType: file.type, previewUrl: URL.createObjectURL(file) });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -135,13 +183,7 @@ export default function CoachPage() {
         });
         const { success, data, error } = await res.json();
         if (success && data) {
-          setForm({
-            distance: data.distance?.toString() || '',
-            time: data.duration || '',
-            pace: data.pace || '',
-            hr: data.heart_rate?.toString() || '',
-            note: data.note || '',
-          });
+          setForm({ distance: data.distance?.toString() || '', time: data.duration || '', pace: data.pace || '', hr: data.heart_rate?.toString() || '', note: data.note || '' });
           setRecordTab('manual');
         } else {
           setErrorMsg(error || '画像の読み取りに失敗しました');
@@ -161,19 +203,15 @@ export default function CoachPage() {
     const today = new Date();
     const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     const { error } = await supabase.from('runs').insert({
-      user_id: userId,
-      date: dateStr,
+      user_id: userId, date: dateStr,
       distance: parseFloat(form.distance) || 0,
-      duration: form.time,
-      pace: form.pace,
-      heart_rate: parseInt(form.hr) || null,
-      note: form.note,
+      duration: form.time, pace: form.pace,
+      heart_rate: parseInt(form.hr) || null, note: form.note,
     });
     if (!error) {
       setShowRecord(false);
       setPreviewUrl(null);
       setForm({ distance: '', time: '', pace: '', hr: '', note: '' });
-      // AIに報告して褒めてもらう
       const msg = `${form.distance}km走りました！${form.time ? `タイム: ${form.time}` : ''}${form.note ? ` ${form.note}` : ''}`;
       await send(msg);
     } else {
@@ -182,18 +220,17 @@ export default function CoachPage() {
     setSaving(false);
   };
 
-  const quickReplies = ['今日のアドバイスを聞かせて', 'プランを作りたい', '雨の日の代替メニューは？'];
+  const accentGrad = isDark ? 'linear-gradient(135deg, #C5FF47, #47B8FF)' : 'linear-gradient(135deg, #FF3B8B, #FF8547)';
+  const sendBtnGrad = isDark ? 'linear-gradient(135deg, #C5FF47, #A0E030)' : 'linear-gradient(135deg, #FF3B8B, #FF6B9D)';
 
   return (
     <div className="min-h-screen pb-20 flex flex-col" style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}>
 
-      {/* ヘッダー */}
       <div className="px-5 pt-12 pb-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
         <h1 className="text-xl font-bold tracking-tight">AIコーチ</h1>
         <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>いつでも相談してください</p>
       </div>
 
-      {/* メッセージエリア */}
       <div className="flex-1 overflow-y-auto px-4 py-4 hide-scroll">
         {historyLoading ? (
           <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>履歴を読み込み中...</p>
@@ -203,19 +240,14 @@ export default function CoachPage() {
               <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                 {msg.role === 'assistant' && (
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                      style={{ background: isDark ? 'linear-gradient(135deg, #C5FF47, #47B8FF)' : 'linear-gradient(135deg, #FF3B8B, #FF8547)' }}>🏃</div>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs" style={{ background: accentGrad }}>🏃</div>
                     <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>AIコーチ</span>
                   </div>
                 )}
                 <div className="max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap"
                   style={{
-                    background: msg.role === 'user'
-                      ? isDark ? 'rgba(197,255,71,0.13)' : 'rgba(255,59,139,0.1)'
-                      : isDark ? 'rgba(26,26,40,0.9)' : 'rgba(240,239,248,0.9)',
-                    border: `1px solid ${msg.role === 'user'
-                      ? isDark ? 'rgba(197,255,71,0.25)' : 'rgba(255,59,139,0.25)'
-                      : isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                    background: msg.role === 'user' ? (isDark ? 'rgba(197,255,71,0.13)' : 'rgba(255,59,139,0.1)') : (isDark ? 'rgba(26,26,40,0.9)' : 'rgba(240,239,248,0.9)'),
+                    border: `1px solid ${msg.role === 'user' ? (isDark ? 'rgba(197,255,71,0.25)' : 'rgba(255,59,139,0.25)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)')}`,
                     borderRadius: msg.role === 'user' ? '1rem 1rem 0.25rem 1rem' : '1rem 1rem 1rem 0.25rem',
                     color: 'var(--text-primary)',
                   }}>
@@ -225,8 +257,7 @@ export default function CoachPage() {
             ))}
             {loading && (
               <div className="flex items-start gap-2">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                  style={{ background: isDark ? 'linear-gradient(135deg, #C5FF47, #47B8FF)' : 'linear-gradient(135deg, #FF3B8B, #FF8547)' }}>🏃</div>
+                <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs" style={{ background: accentGrad }}>🏃</div>
                 <div className="rounded-2xl px-4 py-3 flex gap-1 border"
                   style={{ background: isDark ? 'rgba(26,26,40,0.9)' : 'rgba(240,239,248,0.9)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }}>
                   {[0,1,2].map(i => (
@@ -241,52 +272,83 @@ export default function CoachPage() {
         )}
       </div>
 
-      {/* クイックリプライ */}
-      {messages.length <= 2 && (
-        <div className="px-4 pb-2 flex gap-2 overflow-x-auto hide-scroll flex-shrink-0">
-          {quickReplies.map(r => (
-            <button key={r} onClick={() => setInput(r)}
-              className="whitespace-nowrap px-3 py-1.5 rounded-full text-xs flex-shrink-0 border"
-              style={{ background: isDark ? 'rgba(26,26,40,0.9)' : 'rgba(240,239,248,0.9)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
-              {r}
+      {/* 提案ボタン */}
+      {suggestionsOpen ? (
+        <div className="px-4 pb-2 flex-shrink-0">
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            {SUGGESTIONS.map((s, i) => (
+              <button key={i} onClick={() => handleSuggestion(s)}
+                className="rounded-2xl p-3 text-left border flex items-start gap-2 active:opacity-70"
+                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+                <span className="text-lg leading-none">{s.icon}</span>
+                <span className="text-xs font-semibold leading-snug" style={{ color: 'var(--text-secondary)' }}>{s.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-center">
+            <button onClick={() => setSuggestionsOpen(false)}
+              className="text-xs px-4 py-1 rounded-full border"
+              style={{ color: 'var(--text-muted)', background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+              ▼ 折りたたむ
             </button>
-          ))}
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-center pb-2 flex-shrink-0">
+          <button onClick={() => setSuggestionsOpen(true)}
+            className="text-xs px-4 py-1 rounded-full border"
+            style={{ color: 'var(--text-muted)', background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+            ▲
+          </button>
         </div>
       )}
 
       {/* 入力エリア */}
-      <div className="px-4 pb-4 pt-2 border-t flex gap-2 flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
-        {/* 記録ボタン */}
-        <button onClick={() => setShowRecord(true)}
-          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border"
-          style={{ background: 'var(--accent-bg)', borderColor: 'var(--border-accent)' }}>
-          📷
-        </button>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) send(); }}
-          placeholder="コーチに話しかける..."
-          className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none border"
-          style={{ background: isDark ? 'rgba(26,26,40,0.9)' : 'rgba(240,239,248,0.9)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-        />
-        <button onClick={() => send()} disabled={loading}
-          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-50"
-          style={{ background: isDark ? 'linear-gradient(135deg, #C5FF47, #A0E030)' : 'linear-gradient(135deg, #FF3B8B, #FF6B9D)' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#08080F' : '#FFFFFF'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-          </svg>
-        </button>
+      <div className="px-4 pb-4 pt-2 border-t flex-shrink-0 flex flex-col gap-2" style={{ borderColor: 'var(--border)' }}>
+        {/* 画像添付プレビュー */}
+        {attachedImage && (
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2 border" style={{ background: 'var(--accent-bg)', borderColor: 'var(--border-accent)' }}>
+            <img src={attachedImage.previewUrl} className="w-8 h-8 rounded-lg object-cover" alt="添付画像"/>
+            <span className="text-xs flex-1" style={{ color: 'var(--accent)' }}>画像を添付済み</span>
+            <button onClick={() => setAttachedImage(null)} className="text-base leading-none px-1" style={{ color: 'var(--text-muted)' }}>×</button>
+          </div>
+        )}
+        <div className="flex gap-2">
+          {imageMode && (
+            <>
+              <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageAttach} />
+              <button onClick={() => imageInputRef.current?.click()}
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border text-lg"
+                style={{ background: 'var(--accent-bg)', borderColor: 'var(--border-accent)' }}>
+                📷
+              </button>
+            </>
+          )}
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) send(); }}
+            placeholder="コーチに話しかける..."
+            className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none border"
+            style={{ background: isDark ? 'rgba(26,26,40,0.9)' : 'rgba(240,239,248,0.9)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+          />
+          <button onClick={() => send()} disabled={loading}
+            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-50"
+            style={{ background: sendBtnGrad }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#08080F' : '#FFFFFF'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {/* 記録インプットポップアップ */}
+      {/* 記録ポップアップ */}
       {showRecord && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowRecord(false)}/>
           <div className="relative rounded-t-3xl border border-b-0 flex flex-col"
-           style={{ height: '85vh', background: isDark ? '#0C0C1A' : '#FFFFFF', borderColor: isDark ? 'rgba(197,255,71,0.15)' : 'rgba(255,59,139,0.15)' }}>
-           
-            {/* ポップアップヘッダー */}
+            style={{ height: '85vh', background: isDark ? '#0C0C1A' : '#FFFFFF', borderColor: isDark ? 'rgba(197,255,71,0.15)' : 'rgba(255,59,139,0.15)' }}>
+
             <div className="px-5 py-4 border-b flex items-center justify-between flex-shrink-0"
               style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }}>
               <div>
@@ -300,7 +362,6 @@ export default function CoachPage() {
               </button>
             </div>
 
-            {/* タブ */}
             <div className="px-4 pt-3 flex gap-2 flex-shrink-0">
               {[['suunto','📸 画像読み取り'],['manual','✏️ 手動入力'],['gym','💪 筋トレ']].map(([id, label]) => (
                 <button key={id} onClick={() => setRecordTab(id)}
@@ -315,9 +376,8 @@ export default function CoachPage() {
               ))}
             </div>
 
-            {/* コンテンツ */}
+            {/* スクロール可能コンテンツ */}
             <div className="overflow-y-auto px-4 py-4 flex-1">
-
               {recordTab === 'suunto' && (
                 <label className="block border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer"
                   style={{ borderColor: analyzing ? 'var(--accent)' : 'var(--border-accent)', background: analyzing ? 'var(--accent-bg)' : 'var(--bg-card)' }}>
@@ -344,7 +404,6 @@ export default function CoachPage() {
                           <span key={app} className="px-2 py-1 rounded-full text-xs font-semibold" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>{app}</span>
                         ))}
                       </div>
-                      <p className="text-xs mt-3" style={{ color: 'var(--text-secondary)' }}>AIが自動で数値を読み取ります</p>
                     </>
                   )}
                 </label>
@@ -405,18 +464,22 @@ export default function CoachPage() {
               )}
 
               {errorMsg && <p className="text-xs text-[#FF4D6A] text-center mt-3">{errorMsg}</p>}
+            </div>
 
-              {recordTab !== 'suunto' && (
+            {/* Submitボタン — スクロール外に固定 */}
+            {recordTab !== 'suunto' && (
+              <div className="px-4 pb-6 pt-3 border-t flex-shrink-0"
+                style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }}>
                 <button onClick={handleSaveRecord} disabled={saving}
-                  className="w-full mt-6 py-4 rounded-2xl font-bold text-base disabled:opacity-50"
+                  className="w-full py-4 rounded-2xl font-bold text-base disabled:opacity-50"
                   style={{
                     background: isDark ? 'linear-gradient(90deg, #C5FF47, #A0E030)' : 'linear-gradient(90deg, #FF3B8B, #FF6B9D)',
                     color: isDark ? '#08080F' : '#FFFFFF',
                   }}>
                   {saving ? '保存中...' : '記録を保存してAIに報告'}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}

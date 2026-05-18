@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const client = new Anthropic();
 
 export async function POST(request: Request) {
-  const { messages, userId, accessToken } = await request.json();
+  const { messages, userId, accessToken, lastMessageImage } = await request.json();
 
   // トークンを使ってユーザー認証済みクライアントを作成
   const supabase = createClient(
@@ -69,14 +69,27 @@ export async function POST(request: Request) {
     (contextData ? '【ユーザーの現在の状況】' + contextData + '\n\n' : '') +
     '重要：データを保存する場合は必ず以下のJSON形式を返答の最後に含めること。開始タグと終了タグは必ずセットで使うこと。\n\n大会を設定した場合：\n[RACE_DATA]{"name":"大会名","date":"YYYY-MM-DD","distance":"フルマラソン","goal_time":"目標タイム"}[/RACE_DATA]\n\n週別計画を作成した場合：\n[PLAN_DATA][{"week_start":"YYYY-MM-DD","target_km":数値,"phase":"フェーズ名","long_run_km":数値}][/PLAN_DATA]\n\n日次計画を作成した場合：\n[DAILY_PLAN_DATA][{"date":"YYYY-MM-DD","type":"ジョグ/ロング走/テンポ走/レスト/筋トレ","km":数値,"note":"メモ"}][/DAILY_PLAN_DATA]\n\n口調：親しみやすく励ましを忘れずに。絵文字を適度に使う。';
 
+  const claudeMessages = messages.map((m: { role: string; content: string }, idx: number) => {
+    if (idx === messages.length - 1 && m.role === 'user' && lastMessageImage) {
+      const rawText = m.content
+        .replace('📷 トレーニング画像を送信しました', 'この画像のトレーニング内容を詳しく分析してください。1kmごとのペース、心拍数の推移、総合的な評価とアドバイスをお願いします。')
+        .replace(/^📷 画像\n/, '');
+      return {
+        role: m.role,
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: lastMessageImage.mediaType, data: lastMessageImage.base64 } },
+          { type: 'text', text: rawText || 'この画像のトレーニング内容を分析してください。' },
+        ],
+      };
+    }
+    return { role: m.role, content: m.content };
+  });
+
   const response = await client.messages.create({
     model: 'claude-opus-4-6',
     max_tokens: 4000,
     system: systemPrompt,
-    messages: messages.map((m: { role: string; content: string }) => ({
-      role: m.role,
-      content: m.content,
-    })),
+    messages: claudeMessages,
   });
 
   const fullReply = response.content[0].type === 'text' ? response.content[0].text : '';
