@@ -34,7 +34,7 @@ export default function CoachPage() {
 
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const [imageMode, setImageMode] = useState(false);
-  const [attachedImage, setAttachedImage] = useState<{ base64: string; mediaType: string; previewUrl: string } | null>(null);
+  const [attachedImages, setAttachedImages] = useState<{ base64: string; mediaType: string; previewUrl: string }[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
@@ -74,20 +74,20 @@ export default function CoachPage() {
 
   const send = async (customInput?: string) => {
     const text = customInput ?? input;
-    if (!text.trim() && !attachedImage || loading) return;
+    if (!text.trim() && attachedImages.length === 0 || loading) return;
 
-    const displayContent = attachedImage && !text.trim()
-      ? '📷 トレーニング画像を送信しました'
-      : attachedImage
-      ? `📷 画像\n${text}`
+    const displayContent = attachedImages.length > 0 && !text.trim()
+      ? `📷 ${attachedImages.length}枚の画像を送信しました`
+      : attachedImages.length > 0
+      ? `📷 ${attachedImages.length}枚の画像\n${text}`
       : text;
 
     const userMsg: Message = { role: 'user', content: displayContent };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput('');
-    const imageToSend = attachedImage;
-    setAttachedImage(null);
+    const imagesToSend = attachedImages;
+    setAttachedImages([]);
     setLoading(true);
 
     try {
@@ -95,7 +95,7 @@ export default function CoachPage() {
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, userId, accessToken, lastMessageImage: imageToSend }),
+        body: JSON.stringify({ messages: newMessages, userId, accessToken, lastMessageImages: imagesToSend }),
       });
       const data = await res.json();
 
@@ -156,14 +156,17 @@ export default function CoachPage() {
   };
 
   const handleImageAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = (reader.result as string).split(',')[1];
-      setAttachedImage({ base64, mediaType: file.type, previewUrl: URL.createObjectURL(file) });
-    };
-    reader.readAsDataURL(file);
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        setAttachedImages(prev => [...prev, { base64, mediaType: file.type, previewUrl: URL.createObjectURL(file) }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -306,17 +309,22 @@ export default function CoachPage() {
       {/* 入力エリア */}
       <div className="px-4 pb-4 pt-2 border-t flex-shrink-0 flex flex-col gap-2" style={{ borderColor: 'var(--border)' }}>
         {/* 画像添付プレビュー */}
-        {attachedImage && (
-          <div className="flex items-center gap-2 rounded-xl px-3 py-2 border" style={{ background: 'var(--accent-bg)', borderColor: 'var(--border-accent)' }}>
-            <img src={attachedImage.previewUrl} className="w-8 h-8 rounded-lg object-cover" alt="添付画像"/>
-            <span className="text-xs flex-1" style={{ color: 'var(--accent)' }}>画像を添付済み</span>
-            <button onClick={() => setAttachedImage(null)} className="text-base leading-none px-1" style={{ color: 'var(--text-muted)' }}>×</button>
+        {attachedImages.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto hide-scroll">
+            {attachedImages.map((img, i) => (
+              <div key={i} className="relative flex-shrink-0">
+                <img src={img.previewUrl} className="w-14 h-14 rounded-xl object-cover border" style={{ borderColor: 'var(--border-accent)' }} alt="添付画像"/>
+                <button onClick={() => setAttachedImages(prev => prev.filter((_, j) => j !== i))}
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold"
+                  style={{ background: 'var(--accent)', color: isDark ? '#08080F' : '#FFFFFF' }}>×</button>
+              </div>
+            ))}
           </div>
         )}
         <div className="flex gap-2">
           {imageMode && (
             <>
-              <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageAttach} />
+              <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageAttach} />
               <button onClick={() => imageInputRef.current?.click()}
                 className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border text-lg"
                 style={{ background: 'var(--accent-bg)', borderColor: 'var(--border-accent)' }}>
