@@ -363,7 +363,7 @@ export default function CoachPage() {
             </div>
 
             <div className="px-4 pt-3 flex gap-2 flex-shrink-0">
-              {[['suunto','📸 画像読み取り'],['manual','✏️ 手動入力'],['gym','💪 筋トレ']].map(([id, label]) => (
+              {[['suunto','📸 画像読み取り'],['manual','✏️ 手動入力']].map(([id, label]) => (
                 <button key={id} onClick={() => setRecordTab(id)}
                   className="flex-1 py-2 rounded-xl text-xs font-semibold border transition-all"
                   style={{
@@ -450,20 +450,7 @@ export default function CoachPage() {
                 </div>
               )}
 
-              {recordTab === 'gym' && (
-                <div className="flex flex-col gap-3">
-                  {[['種目','例：プッシュアップ'],['セット数','例：3'],['回数','例：20']].map(([label, ph]) => (
-                    <div key={label}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
-                      <input type="text" placeholder={ph}
-                        className="w-full rounded-xl px-4 py-3 text-base outline-none border"
-                        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}/>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {errorMsg && <p className="text-xs text-[#FF4D6A] text-center mt-3">{errorMsg}</p>}
+{errorMsg && <p className="text-xs text-[#FF4D6A] text-center mt-3">{errorMsg}</p>}
             </div>
 
             {/* Submitボタン — スクロール外に固定 */}
