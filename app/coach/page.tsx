@@ -53,14 +53,15 @@ export default function CoachPage() {
   }, []);
 
   const loadHistory = async (uid: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('chat_histories')
       .select('role, content')
       .eq('user_id', uid)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(50);
+    if (error) console.error('[loadHistory] error:', error);
     if (data && data.length > 0) {
-      setMessages(data as Message[]);
+      setMessages([...data].reverse() as Message[]);
       setSuggestionsOpen(false);
     } else {
       setMessages([{ role: 'assistant', content: 'こんにちは！AIコーチです 🏃\n何について話しましょうか？' }]);
@@ -69,7 +70,8 @@ export default function CoachPage() {
 
   const saveMessage = async (role: string, content: string) => {
     if (!userId) return;
-    await supabase.from('chat_histories').insert({ user_id: userId, role, content });
+    const { error } = await supabase.from('chat_histories').insert({ user_id: userId, role, content });
+    if (error) console.error('[saveMessage] error:', error);
   };
 
   const send = async (customInput?: string) => {
