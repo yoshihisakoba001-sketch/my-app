@@ -209,43 +209,6 @@ const DayTown = ({ km }: { km: number }) => {
             fill={col===0&&row===3?'#FFEEAA':col===1&&row===1?'#FFEEAA':'#E0E8FF'} opacity={0.75}/>
         )))}
 
-        {/* ── RUNNER side-view facing right (outer=position, inner=animation) ── */}
-        <g transform={`translate(${runnerX},100)`}>
-          <g className="tr-run">
-            {/* cap */}
-            <rect x="4"  y="0"  width="6"  height="2"  fill="#888888"/>
-            <rect x="2"  y="2"  width="12" height="3"  fill="#999999"/>
-            <rect x="12" y="5"  width="5"  height="2"  fill="#777777"/>
-            {/* head profile facing right */}
-            <rect x="2"  y="3"  width="11" height="8"  fill="#FFAA66"/>
-            <rect x="11" y="5"  width="2"  height="2"  fill="#111111"/>
-            <rect x="12" y="8"  width="2"  height="2"  fill="#DD8844"/>
-            {/* neck */}
-            <rect x="4"  y="11" width="3"  height="2"  fill="#FFAA66"/>
-            {/* torso */}
-            <rect x="2"  y="13" width="11" height="7"  fill="#FF3B8B"/>
-            <rect x="2"  y="19" width="11" height="1"  fill="#DD2270"/>
-            {/* front arm: upper arm→elbow(out)→forearm up — running form */}
-            <rect x="12" y="15" width="3"  height="6"  fill="#FFAA66"/>
-            <rect x="12" y="20" width="5"  height="2"  fill="#FFAA66"/>
-            <rect x="15" y="11" width="3"  height="11" fill="#FFAA66"/>
-            <rect x="14" y="10" width="4"  height="3"  fill="#FFAA66"/>
-            {/* back arm: trailing behind and down */}
-            <rect x="-3" y="15" width="6"  height="2"  fill="#FFAA66"/>
-            <rect x="-4" y="16" width="3"  height="5"  fill="#FFAA66"/>
-            {/* shorts */}
-            <rect x="2"  y="20" width="11" height="4"  fill="#1A1A2E"/>
-            {/* front leg: extending forward and down */}
-            <rect x="7"  y="24" width="5"  height="5"  fill="#FFAA66"/>
-            <rect x="9"  y="28" width="4"  height="5"  fill="#FFAA66"/>
-            <rect x="9"  y="32" width="7"  height="3"  fill="#1A1A2E"/>
-            {/* back leg: thigh back, shin kicked UP behind */}
-            <rect x="-2" y="24" width="5"  height="4"  fill="#FFAA66"/>
-            <rect x="-2" y="19" width="4"  height="7"  fill="#FFAA66"/>
-            <rect x="-4" y="17" width="6"  height="3"  fill="#1A1A2E"/>
-          </g>
-        </g>
-
         {/* ── UNLOCKABLE FACILITIES ── */}
 
         {/* 木 50km  x=308 */}
@@ -439,6 +402,43 @@ const DayTown = ({ km }: { km: number }) => {
             ))}
           </g>
         </>)}
+
+        {/* ── RUNNER (最前面に描画してビル手前に表示) ── */}
+        <g transform={`translate(${runnerX},100)`}>
+          <g className="tr-run">
+            {/* cap */}
+            <rect x="4"  y="0"  width="6"  height="2"  fill="#888888"/>
+            <rect x="2"  y="2"  width="12" height="3"  fill="#999999"/>
+            <rect x="12" y="5"  width="5"  height="2"  fill="#777777"/>
+            {/* head profile facing right */}
+            <rect x="2"  y="3"  width="11" height="8"  fill="#FFAA66"/>
+            <rect x="11" y="5"  width="2"  height="2"  fill="#111111"/>
+            <rect x="12" y="8"  width="2"  height="2"  fill="#DD8844"/>
+            {/* neck */}
+            <rect x="4"  y="11" width="3"  height="2"  fill="#FFAA66"/>
+            {/* torso */}
+            <rect x="2"  y="13" width="11" height="7"  fill="#FF3B8B"/>
+            <rect x="2"  y="19" width="11" height="1"  fill="#DD2270"/>
+            {/* front arm: upper arm→elbow(out)→forearm up — running form */}
+            <rect x="12" y="15" width="3"  height="6"  fill="#FFAA66"/>
+            <rect x="12" y="20" width="5"  height="2"  fill="#FFAA66"/>
+            <rect x="15" y="11" width="3"  height="11" fill="#FFAA66"/>
+            <rect x="14" y="10" width="4"  height="3"  fill="#FFAA66"/>
+            {/* back arm: trailing behind and down */}
+            <rect x="-3" y="15" width="6"  height="2"  fill="#FFAA66"/>
+            <rect x="-4" y="16" width="3"  height="5"  fill="#FFAA66"/>
+            {/* shorts */}
+            <rect x="2"  y="20" width="11" height="4"  fill="#1A1A2E"/>
+            {/* front leg: extending forward and down */}
+            <rect x="7"  y="24" width="5"  height="5"  fill="#FFAA66"/>
+            <rect x="9"  y="28" width="4"  height="5"  fill="#FFAA66"/>
+            <rect x="9"  y="32" width="7"  height="3"  fill="#1A1A2E"/>
+            {/* back leg: thigh back, shin kicked UP behind */}
+            <rect x="-2" y="24" width="5"  height="4"  fill="#FFAA66"/>
+            <rect x="-2" y="19" width="4"  height="7"  fill="#FFAA66"/>
+            <rect x="-4" y="17" width="6"  height="3"  fill="#1A1A2E"/>
+          </g>
+        </g>
       </svg>
     </div>
   );
@@ -583,46 +583,6 @@ const NightTown = ({ km }: { km: number }) => {
           return <rect key={`twn-${col}-${row}`} x={282+col*12} y={38+row*11} width={8} height={8}
             fill={lit ? (col===1 ? '#AADDFF' : '#FFD060') : '#002200'} opacity={lit ? 0.82 : 1}/>;
         }))}
-
-        {/* ── RUNNER (night: fluorescent shirt, dark skin, neon shoes) ── */}
-        <g transform={`translate(${runnerX},100)`}>
-          <g className="nr-run">
-            {/* cap - dark, neon reflective stripe */}
-            <rect x="4"  y="0"  width="6"  height="2"  fill="#1E1E1E"/>
-            <rect x="2"  y="2"  width="12" height="3"  fill="#282828"/>
-            <rect x="12" y="5"  width="5"  height="2"  fill="#202020"/>
-            <rect x="2"  y="3"  width="12" height="1"  fill="#C5FF47" opacity={0.65}/>
-            {/* head - dark skin */}
-            <rect x="2"  y="3"  width="11" height="8"  fill="#AA6633"/>
-            <rect x="11" y="5"  width="2"  height="2"  fill="#111111"/>
-            <rect x="12" y="8"  width="2"  height="2"  fill="#552211"/>
-            {/* neck */}
-            <rect x="4"  y="11" width="3"  height="2"  fill="#AA6633"/>
-            {/* torso - neon yellow-green */}
-            <rect x="2"  y="13" width="11" height="7"  fill="#C5FF47"/>
-            <rect x="2"  y="19" width="11" height="1"  fill="#AADD30"/>
-            {/* front arm */}
-            <rect x="12" y="15" width="3"  height="6"  fill="#AA6633"/>
-            <rect x="12" y="20" width="5"  height="2"  fill="#AA6633"/>
-            <rect x="15" y="11" width="3"  height="11" fill="#AA6633"/>
-            <rect x="14" y="10" width="4"  height="3"  fill="#AA6633"/>
-            {/* back arm */}
-            <rect x="-3" y="15" width="6"  height="2"  fill="#AA6633"/>
-            <rect x="-4" y="16" width="3"  height="5"  fill="#AA6633"/>
-            {/* shorts - very dark */}
-            <rect x="2"  y="20" width="11" height="4"  fill="#0D0D22"/>
-            {/* front leg */}
-            <rect x="7"  y="24" width="5"  height="5"  fill="#AA6633"/>
-            <rect x="9"  y="28" width="4"  height="5"  fill="#AA6633"/>
-            {/* front shoe - neon */}
-            <rect x="9"  y="32" width="7"  height="3"  fill="#C5FF47"/>
-            {/* back leg */}
-            <rect x="-2" y="24" width="5"  height="4"  fill="#AA6633"/>
-            <rect x="-2" y="19" width="4"  height="7"  fill="#AA6633"/>
-            {/* back shoe - neon */}
-            <rect x="-4" y="17" width="6"  height="3"  fill="#C5FF47"/>
-          </g>
-        </g>
 
         {/* ── UNLOCKABLE FACILITIES (night versions) ── */}
 
@@ -842,6 +802,46 @@ const NightTown = ({ km }: { km: number }) => {
             ))}
           </g>
         </>)}
+
+        {/* ── RUNNER (最前面に描画してビル手前に表示) ── */}
+        <g transform={`translate(${runnerX},100)`}>
+          <g className="nr-run">
+            {/* cap - dark, neon reflective stripe */}
+            <rect x="4"  y="0"  width="6"  height="2"  fill="#1E1E1E"/>
+            <rect x="2"  y="2"  width="12" height="3"  fill="#282828"/>
+            <rect x="12" y="5"  width="5"  height="2"  fill="#202020"/>
+            <rect x="2"  y="3"  width="12" height="1"  fill="#C5FF47" opacity={0.65}/>
+            {/* head - dark skin */}
+            <rect x="2"  y="3"  width="11" height="8"  fill="#AA6633"/>
+            <rect x="11" y="5"  width="2"  height="2"  fill="#111111"/>
+            <rect x="12" y="8"  width="2"  height="2"  fill="#552211"/>
+            {/* neck */}
+            <rect x="4"  y="11" width="3"  height="2"  fill="#AA6633"/>
+            {/* torso - neon yellow-green */}
+            <rect x="2"  y="13" width="11" height="7"  fill="#C5FF47"/>
+            <rect x="2"  y="19" width="11" height="1"  fill="#AADD30"/>
+            {/* front arm */}
+            <rect x="12" y="15" width="3"  height="6"  fill="#AA6633"/>
+            <rect x="12" y="20" width="5"  height="2"  fill="#AA6633"/>
+            <rect x="15" y="11" width="3"  height="11" fill="#AA6633"/>
+            <rect x="14" y="10" width="4"  height="3"  fill="#AA6633"/>
+            {/* back arm */}
+            <rect x="-3" y="15" width="6"  height="2"  fill="#AA6633"/>
+            <rect x="-4" y="16" width="3"  height="5"  fill="#AA6633"/>
+            {/* shorts - very dark */}
+            <rect x="2"  y="20" width="11" height="4"  fill="#0D0D22"/>
+            {/* front leg */}
+            <rect x="7"  y="24" width="5"  height="5"  fill="#AA6633"/>
+            <rect x="9"  y="28" width="4"  height="5"  fill="#AA6633"/>
+            {/* front shoe - neon */}
+            <rect x="9"  y="32" width="7"  height="3"  fill="#C5FF47"/>
+            {/* back leg */}
+            <rect x="-2" y="24" width="5"  height="4"  fill="#AA6633"/>
+            <rect x="-2" y="19" width="4"  height="7"  fill="#AA6633"/>
+            {/* back shoe - neon */}
+            <rect x="-4" y="17" width="6"  height="3"  fill="#C5FF47"/>
+          </g>
+        </g>
 
       </svg>
     </div>

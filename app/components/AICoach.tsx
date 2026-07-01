@@ -23,6 +23,7 @@ export default function AICoach() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -43,6 +44,7 @@ export default function AICoach() {
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setLoading(true);
 
     try {
@@ -182,20 +184,23 @@ export default function AICoach() {
             )}
 
             {/* Input */}
-            <div className="px-4 pb-6 pt-2 border-t flex gap-2 flex-shrink-0"
+            <div className="px-4 pb-6 pt-2 border-t flex gap-2 items-end flex-shrink-0"
               style={{ borderColor: headerBorder }}>
-              <input
+              <textarea
+                ref={textareaRef}
                 value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) send();
+                onChange={e => {
+                  setInput(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                 }}
                 placeholder="コーチに話しかける..."
-                className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none border"
-                style={{ background: inputBg, borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                rows={1}
+                className="flex-1 rounded-2xl px-4 py-2.5 text-sm outline-none border resize-none"
+                style={{ background: inputBg, borderColor: 'var(--border)', color: 'var(--text-primary)', fontSize: '16px', lineHeight: '1.5', maxHeight: '120px', overflowY: 'auto' }}
               />
               <button onClick={send} disabled={loading}
-                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-50"
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-50 mb-0.5"
                 style={{ background: sendBtnGradient }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#08080F' : '#FFFFFF'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
