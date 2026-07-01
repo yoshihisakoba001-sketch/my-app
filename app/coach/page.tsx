@@ -36,6 +36,14 @@ export default function CoachPage() {
   const [imageMode, setImageMode] = useState(false);
   const [attachedImages, setAttachedImages] = useState<{ base64: string; mediaType: string; previewUrl: string }[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    const el = e.target;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  };
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
@@ -88,6 +96,7 @@ export default function CoachPage() {
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     const imagesToSend = attachedImages;
     setAttachedImages([]);
     setLoading(true);
@@ -334,13 +343,26 @@ export default function CoachPage() {
               </button>
             </>
           )}
-          <input
+          <textarea
+            ref={textareaRef}
             value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) send(); }}
+            onChange={handleInputChange}
             placeholder="コーチに話しかける..."
-            className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none border"
-            style={{ background: isDark ? 'rgba(26,26,40,0.9)' : 'rgba(240,239,248,0.9)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            rows={1}
+            className="flex-1 px-4 py-2.5 text-sm outline-none border"
+            style={{
+              background: isDark ? 'rgba(26,26,40,0.9)' : 'rgba(240,239,248,0.9)',
+              borderColor: 'var(--border)',
+              color: 'var(--text-primary)',
+              fontSize: '16px',
+              resize: 'none',
+              overflow: 'hidden',
+              minHeight: '40px',
+              maxHeight: '120px',
+              lineHeight: '1.5',
+              borderRadius: '9999px',
+              boxSizing: 'border-box',
+            }}
           />
           <button onClick={() => send()} disabled={loading}
             className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-50"

@@ -38,13 +38,26 @@ export default function AICoach() {
     });
   }, []);
 
+  const resetTextarea = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    const el = e.target;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  };
+
   const send = async () => {
     if (!input.trim() || loading) return;
     const userMsg: Message = { role: 'user', content: input };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput('');
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    resetTextarea();
     setLoading(true);
 
     try {
@@ -189,15 +202,23 @@ export default function AICoach() {
               <textarea
                 ref={textareaRef}
                 value={input}
-                onChange={e => {
-                  setInput(e.target.value);
-                  e.target.style.height = 'auto';
-                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                }}
+                onChange={handleTextareaChange}
                 placeholder="コーチに話しかける..."
                 rows={1}
-                className="flex-1 rounded-2xl px-4 py-2.5 text-sm outline-none border resize-none"
-                style={{ background: inputBg, borderColor: 'var(--border)', color: 'var(--text-primary)', fontSize: '16px', lineHeight: '1.5', maxHeight: '120px', overflowY: 'auto' }}
+                className="flex-1 rounded-2xl px-4 py-2.5 text-sm outline-none border"
+                style={{
+                  background: inputBg,
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-primary)',
+                  fontSize: '16px',
+                  resize: 'none',
+                  overflow: 'hidden',
+                  minHeight: '44px',
+                  maxHeight: '120px',
+                  lineHeight: '1.5',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                }}
               />
               <button onClick={send} disabled={loading}
                 className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-50 mb-0.5"
