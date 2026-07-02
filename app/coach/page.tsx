@@ -35,6 +35,7 @@ export default function CoachPage() {
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const [imageMode, setImageMode] = useState(false);
   const [attachedImages, setAttachedImages] = useState<{ base64: string; mediaType: string; previewUrl: string }[]>([]);
+  const [textareaOverflow, setTextareaOverflow] = useState<'hidden' | 'auto'>('hidden');
   const imageInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -43,6 +44,7 @@ export default function CoachPage() {
     const el = e.target;
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    setTextareaOverflow(el.scrollHeight > 120 ? 'auto' : 'hidden');
   };
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
@@ -96,7 +98,10 @@ export default function CoachPage() {
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput('');
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+    setTextareaOverflow('hidden');
     const imagesToSend = attachedImages;
     setAttachedImages([]);
     setLoading(true);
@@ -332,7 +337,7 @@ export default function CoachPage() {
             ))}
           </div>
         )}
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end">
           {imageMode && (
             <>
               <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageAttach} />
@@ -356,11 +361,11 @@ export default function CoachPage() {
               color: 'var(--text-primary)',
               fontSize: '16px',
               resize: 'none',
-              overflow: 'hidden',
+              overflowY: textareaOverflow,
               minHeight: '40px',
               maxHeight: '120px',
               lineHeight: '1.5',
-              borderRadius: '9999px',
+              borderRadius: '20px',
               boxSizing: 'border-box',
             }}
           />
