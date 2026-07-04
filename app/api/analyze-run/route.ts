@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const { imageBase64, mediaType } = await request.json();
 
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1000,
       messages: [
         {
@@ -23,19 +23,15 @@ export async function POST(request: Request) {
             },
             {
               type: 'text',
-              text: `このランニングアプリ（Suunto、Garmin、Nike Run Club、Stravaなど）のスクリーンショットから以下の情報を読み取ってください。
+              text: `以下のJSONのみを返してください。前置きや説明は不要です。
 
-必ず以下のJSON形式のみで返答してください（他のテキストは不要）：
 {
-  "distance": 数値（km）,
-  "duration": "時間:分:秒の文字列 例: 1:23:45",
-  "pace": "分:秒/kmの文字列 例: 5:30",
-  "heart_rate": 数値（bpm、ない場合はnull）,
-  "calories": 数値（kcal、ない場合はnull）,
-  "note": "アプリ名と簡単な説明"
-}
-
-情報が読み取れない場合はnullにしてください。`,
+  "distance": 数値(km),
+  "duration": "H:MM:SS形式",
+  "pace": "M:SS形式",
+  "heart_rate": 数値(bpm),
+  "note": "以下の項目をすべて読み取り1行ずつ記載。存在しない項目はスキップ：\\n- アプリ名・デバイス名\\n- 日付\\n- NGP（normalized graded pace）\\n- TSS（training stress score）\\n- 推定VO2max\\n- 平均ケイデンス(spm)\\n- 上昇高度(m)\\n- 回復心拍数\\n- 今月・今週の最長ランなどの称号\\n- その他画面に表示されている指標"
+}`,
             },
           ],
         },
