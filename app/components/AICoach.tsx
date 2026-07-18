@@ -22,8 +22,10 @@ export default function AICoach() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [attachedImages, setAttachedImages] = useState<{ base64: string; mediaType: string; previewUrl: string }[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,6 +46,20 @@ export default function AICoach() {
     }
   };
 
+  const handleImageAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        setAttachedImages(prev => [...prev, { base64, mediaType: file.type, previewUrl: URL.createObjectURL(file) }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     const el = e.target;
@@ -52,19 +68,26 @@ export default function AICoach() {
   };
 
   const send = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg: Message = { role: 'user', content: input };
+    if (!input.trim() && attachedImages.length === 0 || loading) return;
+    const displayContent = attachedImages.length > 0 && !input.trim()
+      ? `📷 ${attachedImages.length}枚の画像を送信しました`
+      : attachedImages.length > 0
+      ? `📷 ${attachedImages.length}枚の画像\n${input}`
+      : input;
+    const userMsg: Message = { role: 'user', content: displayContent };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput('');
     resetTextarea();
+    const imagesToSend = attachedImages;
+    setAttachedImages([]);
     setLoading(true);
 
     try {
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, userId, accessToken }),
+        body: JSON.stringify({ messages: newMessages, userId, accessToken, lastMessageImages: imagesToSend }),
       });
       const data = await res.json();
 
@@ -198,36 +221,56 @@ export default function AICoach() {
             )}
 
             {/* Input */}
-            <div className="px-4 pb-6 pt-2 border-t flex gap-2 items-end flex-shrink-0"
+            <div className="px-4 pb-6 pt-2 border-t flex-shrink-0 flex flex-col gap-2"
               style={{ borderColor: headerBorder }}>
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={handleTextareaChange}
-                placeholder="コーチに話しかける..."
-                rows={1}
-                className="flex-1 rounded-2xl px-4 py-2.5 text-sm outline-none border"
-                style={{
-                  background: inputBg,
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)',
-                  fontSize: '16px',
-                  resize: 'none',
-                  overflow: 'hidden',
-                  minHeight: '44px',
-                  maxHeight: '120px',
-                  lineHeight: '1.5',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                }}
-              />
-              <button onClick={send} disabled={loading}
-                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-50 mb-0.5"
-                style={{ background: sendBtnGradient }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#08080F' : '#FFFFFF'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                </svg>
-              </button>
+              {attachedImages.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto hide-scroll">
+                  {attachedImages.map((img, i) => (
+                    <div key={i} className="relative flex-shrink-0">
+                      <img src={img.previewUrl} className="w-12 h-12 rounded-xl object-cover border" style={{ borderColor: 'var(--border-accent)' }} alt="添付画像"/>
+                      <button onClick={() => setAttachedImages(prev => prev.filter((_, j) => j !== i))}
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold"
+                        style={{ background: isDark ? '#C5FF47' : '#FF3B8B', color: isDark ? '#08080F' : '#FFFFFF' }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2 items-end">
+                <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageAttach} />
+                <button onClick={() => imageInputRef.current?.click()}
+                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border text-lg"
+                  style={{ background: inputBg, borderColor: 'var(--border)' }}>
+                  📷
+                </button>
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={handleTextareaChange}
+                  placeholder="コーチに話しかける..."
+                  rows={1}
+                  className="flex-1 rounded-2xl px-4 py-2.5 text-sm outline-none border"
+                  style={{
+                    background: inputBg,
+                    borderColor: 'var(--border)',
+                    color: 'var(--text-primary)',
+                    fontSize: '16px',
+                    resize: 'none',
+                    overflow: 'hidden',
+                    minHeight: '44px',
+                    maxHeight: '120px',
+                    lineHeight: '1.5',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <button onClick={send} disabled={loading}
+                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-50"
+                  style={{ background: sendBtnGradient }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#08080F' : '#FFFFFF'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>

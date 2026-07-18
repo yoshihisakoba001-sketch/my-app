@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../components/ThemeContext';
 import BottomNav from '../components/BottomNav';
+import Toast from '../components/Toast';
 
 type Message = { role: 'user' | 'assistant'; content: string; };
 
@@ -32,8 +33,8 @@ export default function CoachPage() {
   const [form, setForm] = useState({ distance: '', time: '', pace: '', hr: '', note: '' });
   const [errorMsg, setErrorMsg] = useState('');
 
+  const [toast, setToast] = useState<string | null>(null);
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
-  const [imageMode, setImageMode] = useState(false);
   const [attachedImages, setAttachedImages] = useState<{ base64: string; mediaType: string; previewUrl: string }[]>([]);
   const [textareaOverflow, setTextareaOverflow] = useState<'hidden' | 'auto'>('hidden');
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -168,7 +169,6 @@ export default function CoachPage() {
   const handleSuggestion = async (s: typeof SUGGESTIONS[number]) => {
     setSuggestionsOpen(false);
     if (s.action === 'record') { setShowRecord(true); return; }
-    if (s.enableImage) setImageMode(true);
     await triggerCoach(s.prompt);
   };
 
@@ -222,6 +222,20 @@ export default function CoachPage() {
     setSaving(true);
     const today = new Date();
     const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+    // 保存前の今週km取得（週目標達成チェック用）
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+    const mondayStr = `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
+    const [{ data: weekRuns }, { data: weekPlan }] = await Promise.all([
+      supabase.from('runs').select('distance').eq('user_id', userId).gte('date', mondayStr),
+      supabase.from('plans').select('target_km').eq('user_id', userId).lte('week_start', mondayStr).order('week_start', { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    const prevWeeklyKm = weekRuns?.reduce((s, r) => s + (r.distance || 0), 0) ?? 0;
+    const targetKm = weekPlan?.target_km ?? null;
+
     const { error } = await supabase.from('runs').insert({
       user_id: userId, date: dateStr,
       distance: parseFloat(form.distance) || 0,
@@ -229,6 +243,13 @@ export default function CoachPage() {
       heart_rate: parseInt(form.hr) || null, note: form.note,
     });
     if (!error) {
+      // 週目標達成チェック
+      if (targetKm !== null) {
+        const newWeeklyKm = prevWeeklyKm + (parseFloat(form.distance) || 0);
+        if (prevWeeklyKm < targetKm && newWeeklyKm >= targetKm) {
+          setToast(`🎉 今週の目標 ${targetKm}km 達成！`);
+        }
+      }
       setShowRecord(false);
       setPreviewUrl(null);
       setForm({ distance: '', time: '', pace: '', hr: '', note: '' });
@@ -245,6 +266,7 @@ export default function CoachPage() {
 
   return (
     <div className="min-h-screen pb-20 flex flex-col" style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}>
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
 
       <div className="px-5 pt-12 pb-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
         <h1 className="text-xl font-bold tracking-tight">AIコーチ</h1>
@@ -339,16 +361,12 @@ export default function CoachPage() {
           </div>
         )}
         <div className="flex gap-2 items-end">
-          {imageMode && (
-            <>
-              <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageAttach} />
-              <button onClick={() => imageInputRef.current?.click()}
-                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border text-lg"
-                style={{ background: 'var(--accent-bg)', borderColor: 'var(--border-accent)' }}>
-                📷
-              </button>
-            </>
-          )}
+          <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageAttach} />
+          <button onClick={() => imageInputRef.current?.click()}
+            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border text-lg"
+            style={{ background: 'var(--accent-bg)', borderColor: 'var(--border-accent)' }}>
+            📷
+          </button>
           <textarea
             ref={textareaRef}
             value={input}

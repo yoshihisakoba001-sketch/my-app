@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 
   const systemPrompt = 'あなたはRunPlanのAIランニングコーチです。\n\n役割：\n- ユーザーと会話しながらトレーニング計画を作成・調整\n- 記録へのフィードバック・応援・褒める\n- 天気や体調に合わせた代替メニュー提案\n- 走力向上のアドバイス\n\n' +
     (contextData ? '【ユーザーの現在の状況】' + contextData + '\n\n' : '') +
-    '重要：データを保存する場合は必ず以下のJSON形式を返答の最後に含めること。開始タグと終了タグは必ずセットで使うこと。\n\n大会を設定した場合：\n[RACE_DATA]{"name":"大会名","date":"YYYY-MM-DD","distance":"フルマラソン","goal_time":"目標タイム"}[/RACE_DATA]\n\n週別計画を作成した場合：\n[PLAN_DATA][{"week_start":"YYYY-MM-DD","target_km":数値,"phase":"フェーズ名","long_run_km":数値}][/PLAN_DATA]\n\n日次計画を作成した場合：\n[DAILY_PLAN_DATA][{"date":"YYYY-MM-DD","type":"ジョグ/ロング走/テンポ走/レスト/筋トレ","km":数値,"note":"メモ"}][/DAILY_PLAN_DATA]\n\n口調：親しみやすく励ましを忘れずに。絵文字を適度に使う。';
+    '【データ保存のルール】\n画像が共有された場合は、まず分析・フィードバック・アドバイスを行うこと。データの保存（以下のタグ出力）は、ユーザーが「記録して」「保存して」「登録して」「はい」など明示的に保存を求めた場合のみ行うこと。自動的に先走って保存しないこと。\n\nデータを保存する場合は必ず以下のJSON形式を返答の最後に含めること。開始タグと終了タグは必ずセットで使うこと。\n\n大会を設定した場合：\n[RACE_DATA]{"name":"大会名","date":"YYYY-MM-DD","distance":"フルマラソン","goal_time":"目標タイム"}[/RACE_DATA]\n\n週別計画を作成した場合：\n[PLAN_DATA][{"week_start":"YYYY-MM-DD","target_km":数値,"phase":"フェーズ名","long_run_km":数値}][/PLAN_DATA]\n\n日次計画を作成した場合：\n[DAILY_PLAN_DATA][{"date":"YYYY-MM-DD","type":"ジョグ/ロング走/テンポ走/レスト/筋トレ","km":数値,"note":"メモ"}][/DAILY_PLAN_DATA]\n\n口調：親しみやすく励ましを忘れずに。絵文字を適度に使う。';
 
   const claudeMessages = messages.map((m: { role: string; content: string }, idx: number) => {
     if (idx === messages.length - 1 && m.role === 'user' && lastMessageImages?.length > 0) {

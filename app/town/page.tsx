@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import BottomNav from '../components/BottomNav';
 import ProgressBar from '../components/ProgressBar';
+import UnlockPopup from '../components/UnlockPopup';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../components/ThemeContext';
 
@@ -854,6 +855,8 @@ export default function TownPage() {
   const [totalKm, setTotalKm] = useState(0);
   const [loading, setLoading] = useState(true);
   const [groupMembers, setGroupMembers] = useState<{ name: string; km: number; color: string; icon: string }[]>([]);
+  const [unlockPopup, setUnlockPopup] = useState<{ name: string; icon: string } | null>(null);
+  const [newlyUnlocked, setNewlyUnlocked] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -862,9 +865,23 @@ export default function TownPage() {
 
       // 自分のkm
       const { data: runs } = await supabase.from('runs').select('distance').eq('user_id', user.id);
+      let currentTotalKm = 0;
       if (runs) {
-        const total = runs.reduce((sum, r) => sum + (r.distance || 0), 0);
-        setTotalKm(Math.round(total * 10) / 10);
+        currentTotalKm = Math.round(runs.reduce((sum, r) => sum + (r.distance || 0), 0) * 10) / 10;
+        setTotalKm(currentTotalKm);
+      }
+
+      // アンロック検知
+      const storageKey = `seen_unlocks_${user.id}`;
+      const seenRaw = localStorage.getItem(storageKey);
+      const seen: string[] = seenRaw ? JSON.parse(seenRaw) : [];
+      const currentUnlocked = BUILDINGS.filter(b => currentTotalKm >= b.unlockedAt).map(b => b.name);
+      const newOnes = currentUnlocked.filter(name => !seen.includes(name));
+      if (newOnes.length > 0) {
+        setNewlyUnlocked(newOnes);
+        const latest = BUILDINGS.find(b => b.name === newOnes[newOnes.length - 1]);
+        if (latest) setUnlockPopup({ name: latest.name, icon: latest.icon });
+        localStorage.setItem(storageKey, JSON.stringify(currentUnlocked));
       }
 
       // 友人IDを取得
@@ -911,10 +928,13 @@ export default function TownPage() {
   }, []);
 
   const nextUnlock = BUILDINGS.find(b => b.unlockedAt > totalKm);
-  const buildings = BUILDINGS.map(b => ({ ...b, unlocked: totalKm >= b.unlockedAt }));
+  const buildings = BUILDINGS.map(b => ({ ...b, unlocked: totalKm >= b.unlockedAt, isNew: newlyUnlocked.includes(b.name) }));
 
   return (
     <div className="min-h-screen pb-24" style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}>
+      {unlockPopup && (
+        <UnlockPopup building={unlockPopup} onClose={() => setUnlockPopup(null)} />
+      )}
       <div className="px-5 pt-12 pb-4 border-b" style={{ borderColor: 'var(--border)' }}>
         <h1 className="text-xl font-bold tracking-tight">マイタウン</h1>
         <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>走るたびに街が育ちます</p>
@@ -986,6 +1006,7 @@ export default function TownPage() {
                     background: b.unlocked ? 'var(--accent-bg)' : 'var(--bg-card)',
                     borderColor: b.unlocked ? 'var(--border-accent)' : 'var(--border)',
                     opacity: b.unlocked ? 1 : 0.5,
+                    animation: b.isNew ? 'buildingAppear 0.6s ease-out both' : undefined,
                   }}>
                   <span className="text-2xl">{b.icon}</span>
                   <div>
