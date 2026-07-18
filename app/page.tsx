@@ -94,7 +94,7 @@ export default function Home() {
       }
 
       const { data: raceData } = await supabase
-        .from('races').select('*').eq('user_id', user.id).order('date', { ascending: true }).limit(1).maybeSingle();
+        .from('races').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (raceData) setRace(raceData);
 
       const { data: todayPlanData } = await supabase

@@ -117,7 +117,8 @@ export default function CoachPage() {
 
       if (userId) {
         if (data.raceData) {
-          await supabase.from('races').upsert({ user_id: userId, ...data.raceData }, { onConflict: 'user_id,name' });
+          await supabase.from('races').delete().eq('user_id', userId);
+          await supabase.from('races').insert({ user_id: userId, ...data.raceData });
         }
         if (data.planData) {
           const plansWithUserId = data.planData.map((p: any) => ({ ...p, user_id: userId }));
