@@ -34,6 +34,8 @@ export default function CoachPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const [toast, setToast] = useState<string | null>(null);
+  const [pendingRunData, setPendingRunData] = useState<{ date: string; distance: number; duration: string; pace: string; heart_rate: number | null; note: string } | null>(null);
+  const [savingRun, setSavingRun] = useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const [attachedImages, setAttachedImages] = useState<{ base64: string; mediaType: string; previewUrl: string }[]>([]);
   const [textareaOverflow, setTextareaOverflow] = useState<'hidden' | 'auto'>('hidden');
@@ -117,6 +119,9 @@ export default function CoachPage() {
       const data = await res.json();
 
       if (userId) {
+        if (data.runData) {
+          setPendingRunData(data.runData);
+        }
         if (data.raceData) {
           await supabase.from('races').delete().eq('user_id', userId);
           await supabase.from('races').insert({ user_id: userId, ...data.raceData });
@@ -164,6 +169,28 @@ export default function CoachPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const confirmRunSave = async () => {
+    if (!pendingRunData || !userId) return;
+    setSavingRun(true);
+    const { error } = await supabase.from('runs').insert({
+      user_id: userId,
+      date: pendingRunData.date,
+      distance: pendingRunData.distance,
+      duration: pendingRunData.duration,
+      pace: pendingRunData.pace,
+      heart_rate: pendingRunData.heart_rate,
+      note: pendingRunData.note,
+    });
+    if (!error) {
+      setMessages(prev => [...prev, { role: 'assistant', content: `✅ ${pendingRunData.distance}km の記録を保存しました！` }]);
+      await saveMessage('assistant', `✅ ${pendingRunData.distance}km の記録を保存しました！`);
+    } else {
+      setMessages(prev => [...prev, { role: 'assistant', content: '保存に失敗しました。もう一度試してください。' }]);
+    }
+    setPendingRunData(null);
+    setSavingRun(false);
   };
 
   const handleSuggestion = async (s: typeof SUGGESTIONS[number]) => {
@@ -306,6 +333,40 @@ export default function CoachPage() {
                     <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce"
                       style={{ background: 'var(--accent)', animationDelay: `${i * 0.15}s` }} />
                   ))}
+                </div>
+              </div>
+            )}
+            {pendingRunData && (
+              <div className="rounded-2xl border p-4 flex flex-col gap-3"
+                style={{ background: isDark ? 'rgba(26,26,40,0.9)' : 'rgba(240,239,248,0.9)', borderColor: isDark ? 'rgba(197,255,71,0.3)' : 'rgba(255,59,139,0.3)' }}>
+                <p className="text-sm font-bold" style={{ color: 'var(--accent)' }}>🏃 この内容で記録しますか？</p>
+                <div className="flex flex-col gap-1 text-sm" style={{ color: 'var(--text-primary)' }}>
+                  {[
+                    ['📅', '日付', pendingRunData.date],
+                    ['📏', '距離', `${pendingRunData.distance} km`],
+                    ['⏱️', 'タイム', pendingRunData.duration],
+                    ['💨', 'ペース', `${pendingRunData.pace} /km`],
+                    pendingRunData.heart_rate ? ['❤️', '心拍数', `${pendingRunData.heart_rate} bpm`] : null,
+                    pendingRunData.note ? ['📝', 'メモ', pendingRunData.note] : null,
+                  ].filter((r): r is string[] => r !== null).map(([icon, label, value], i) => (
+                    <div key={i} className="flex gap-2">
+                      <span>{icon}</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{label}:</span>
+                      <span>{value as string}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={confirmRunSave} disabled={savingRun}
+                    className="flex-1 py-2 rounded-xl text-sm font-bold disabled:opacity-50"
+                    style={{ background: sendBtnGrad, color: isDark ? '#08080F' : '#FFFFFF' }}>
+                    {savingRun ? '保存中...' : '記録する'}
+                  </button>
+                  <button onClick={() => setPendingRunData(null)}
+                    className="px-4 py-2 rounded-xl text-sm border"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+                    キャンセル
+                  </button>
                 </div>
               </div>
             )}
