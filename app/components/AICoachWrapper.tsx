@@ -5,6 +5,6 @@ import AICoach from './AICoach';
 
 export default function AICoachWrapper() {
   const pathname = usePathname();
-  if (pathname === '/login') return null;
+  if (pathname === '/login' || pathname === '/coach') return null;
   return <AICoach />;
 }
