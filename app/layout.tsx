@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import AICoachWrapper from './components/AICoachWrapper';
 import { ThemeProvider } from './components/ThemeContext';
 
 export const metadata: Metadata = {
@@ -23,7 +22,6 @@ export default function RootLayout({
       <body className="min-h-screen" style={{ color: 'var(--text-primary)' }}>
         <ThemeProvider>
           {children}
-          <AICoachWrapper />
         </ThemeProvider>
       </body>
     </html>
