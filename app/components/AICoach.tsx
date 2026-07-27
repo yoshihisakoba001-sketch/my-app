@@ -23,8 +23,7 @@ export default function AICoach() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [attachedImages, setAttachedImages] = useState<{ base64: string; mediaType: string; previewUrl: string }[]>([]);
-  const [pendingRunData, setPendingRunData] = useState<{ date: string; distance: number; duration: string; pace: string; heart_rate: number | null; note: string } | null>(null);
-  const [savingRun, setSavingRun] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -42,10 +41,14 @@ export default function AICoach() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   const resetTextarea = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
   const handleImageAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,28 +96,8 @@ export default function AICoach() {
       });
       const data = await res.json();
 
-      // クライアント側でSupabaseに書き込む（ユーザーのセッションを使用）
-      if (userId) {
-        if (data.runData) {
-          setPendingRunData(data.runData);
-        }
-        if (data.raceData) {
-          await supabase.from('races').delete().eq('user_id', userId);
-          await supabase.from('races').insert({ user_id: userId, ...data.raceData });
-        }
-        if (data.planData) {
-          const plansWithUserId = data.planData.map((p: any) => ({ ...p, user_id: userId }));
-          const weekStarts = plansWithUserId.map((p: any) => p.week_start);
-          await supabase.from('plans').delete().eq('user_id', userId).in('week_start', weekStarts);
-          await supabase.from('plans').insert(plansWithUserId);
-        }
-        if (data.dailyPlanData) {
-          const dailyPlansWithUserId = data.dailyPlanData.map((p: any) => ({ ...p, user_id: userId }));
-          const dates = dailyPlansWithUserId.map((p: any) => p.date);
-          await supabase.from('daily_plans').delete().eq('user_id', userId).in('date', dates);
-          await supabase.from('daily_plans').insert(dailyPlansWithUserId);
-        }
-      }
+      if (data.runSaved) setToast('✅ ランニング記録を保存しました');
+      if (data.planSaved) setToast('✅ トレーニング計画を保存しました');
 
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply || '' }]);
     } catch {
@@ -122,27 +105,6 @@ export default function AICoach() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const confirmRunSave = async () => {
-    if (!pendingRunData || !userId) return;
-    setSavingRun(true);
-    const { error } = await supabase.from('runs').insert({
-      user_id: userId,
-      date: pendingRunData.date,
-      distance: pendingRunData.distance,
-      duration: pendingRunData.duration,
-      pace: pendingRunData.pace,
-      heart_rate: pendingRunData.heart_rate,
-      note: pendingRunData.note,
-    });
-    if (!error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: `✅ ${pendingRunData.distance}km の記録を保存しました！` }]);
-    } else {
-      setMessages(prev => [...prev, { role: 'assistant', content: '保存に失敗しました。もう一度試してください。' }]);
-    }
-    setPendingRunData(null);
-    setSavingRun(false);
   };
 
   const quickReplies = ['今日のアドバイスを聞かせて', 'プランを作りたい', '雨の日の代替メニューは？'];
@@ -165,7 +127,27 @@ export default function AICoach() {
 
   return (
     <>
-  
+      {/* FAB */}
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed bottom-24 right-4 w-14 h-14 rounded-full flex items-center justify-center z-40 text-2xl"
+        style={{ background: fabGradient, boxShadow: fabShadow }}>
+        🏃
+      </button>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 left-0 right-0 flex justify-center z-[200] px-4 pointer-events-none"
+          style={{ animation: 'slideDown 0.35s ease-out' }}>
+          <div className="px-6 py-3 rounded-full text-sm font-bold shadow-lg"
+            style={{
+              background: isDark ? 'linear-gradient(135deg, #C5FF47, #A0E030)' : 'linear-gradient(135deg, #FF3B8B, #FF6B9D)',
+              color: isDark ? '#08080F' : '#FFFFFF',
+            }}>
+            {toast}
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {open && (
@@ -226,40 +208,6 @@ export default function AICoach() {
                         <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce"
                           style={{ background: 'var(--accent)', animationDelay: `${i * 0.15}s` }} />
                       ))}
-                    </div>
-                  </div>
-                )}
-                {pendingRunData && (
-                  <div className="rounded-2xl border p-4 flex flex-col gap-3"
-                    style={{ background: assistantMsgBg, borderColor: isDark ? 'rgba(197,255,71,0.3)' : 'rgba(255,59,139,0.3)' }}>
-                    <p className="text-sm font-bold" style={{ color: 'var(--accent)' }}>🏃 この内容で記録しますか？</p>
-                    <div className="flex flex-col gap-1 text-sm" style={{ color: 'var(--text-primary)' }}>
-                      {[
-                        ['📅', '日付', pendingRunData.date],
-                        ['📏', '距離', `${pendingRunData.distance} km`],
-                        ['⏱️', 'タイム', pendingRunData.duration],
-                        ['💨', 'ペース', `${pendingRunData.pace} /km`],
-                        pendingRunData.heart_rate ? ['❤️', '心拍数', `${pendingRunData.heart_rate} bpm`] : null,
-                        pendingRunData.note ? ['📝', 'メモ', pendingRunData.note] : null,
-                      ].filter((r): r is string[] => r !== null).map(([icon, label, value], i) => (
-                        <div key={i} className="flex gap-2">
-                          <span>{icon}</span>
-                          <span style={{ color: 'var(--text-secondary)' }}>{label}:</span>
-                          <span>{value as string}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={confirmRunSave} disabled={savingRun}
-                        className="flex-1 py-2 rounded-xl text-sm font-bold disabled:opacity-50"
-                        style={{ background: isDark ? 'linear-gradient(135deg, #C5FF47, #A0E030)' : 'linear-gradient(135deg, #FF3B8B, #FF6B9D)', color: isDark ? '#08080F' : '#FFFFFF' }}>
-                        {savingRun ? '保存中...' : '記録する'}
-                      </button>
-                      <button onClick={() => setPendingRunData(null)}
-                        className="px-4 py-2 rounded-xl text-sm border"
-                        style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
-                        キャンセル
-                      </button>
                     </div>
                   </div>
                 )}
